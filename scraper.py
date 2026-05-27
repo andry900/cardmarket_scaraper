@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from playwright._impl._errors import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
@@ -18,6 +19,9 @@ DEFAULT_BANNED = ["foro", "fori", "graffi", "buco", "hole", "scratch", "damaged"
 DEFAULT_SPECULATIVE = ["possibile", "papabile", "could be", "possible"]
 COMMENT_ATTRS = ["title", "data-bs-original-title", "aria-label", "data-original-title"]
 NEGATING_PREFIXES = ["no", "non", "senza", "nessun", "nessuna", "nessuno", "privo di", "priva di", "privi di", "prive di", "senza alcun", "senza alcuna", "senza alcuno", "without", "free of", "free from", "no signs of"]
+
+# eBay price extraction: matches "EUR 45,99" or "45,99 EUR" anywhere in row text.
+_EBAY_PRICE_RE = re.compile(r"EUR\s*([0-9][0-9\.\,]*)|([0-9][0-9\.\,]*)\s*EUR", re.IGNORECASE)
 
 
 @dataclass
@@ -40,6 +44,11 @@ class ProductResult:
     excluded_speculative: int
     excluded_required: int
     note: str | None = None
+    ebay_url: str | None = None
+    ebay_avg_price: float | None = None
+    ebay_prices_used: list[float] | None = None
+    final_price: float | None = None
+    final_source: str | None = None
 
 
 def normalize_text(value: str) -> str:
@@ -97,6 +106,20 @@ def format_euro(value: float) -> str:
     base = f"{value:,.2f}"
     base = base.replace(",", "X").replace(".", ",").replace("X", ".")
     return f"{base} €"
+
+
+def extract_ebay_price(text: str) -> float | None:
+    """Return the first EUR price found in eBay item text (item price, before shipping)."""
+    match = _EBAY_PRICE_RE.search(text)
+    if not match:
+        return None
+    amount_str = (match.group(1) or match.group(2) or "").strip()
+    if not amount_str:
+        return None
+    try:
+        return parse_euro(amount_str)
+    except ValueError:
+        return None
 
 
 def extract_price(row_text: str) -> tuple[float, str] | None:
@@ -285,6 +308,176 @@ def scrape_product(
     )
 
 
+# ── eBay page helpers (ported from FPop) ─────────────────────────────────────
+
+def _safe_page_title(page: Any, retries: int = 3) -> str:
+    for _ in range(max(1, retries)):
+        try:
+            return page.title()
+        except PlaywrightError as exc:
+            if "Execution context was destroyed" not in str(exc):
+                return ""
+            page.wait_for_timeout(200)
+    return ""
+
+
+def _safe_page_body_text(page: Any, retries: int = 3) -> str:
+    for _ in range(max(1, retries)):
+        try:
+            return page.inner_text("body")
+        except PlaywrightError as exc:
+            if "Execution context was destroyed" not in str(exc):
+                return ""
+            page.wait_for_timeout(200)
+    return ""
+
+
+def _ebay_is_access_denied(page: Any) -> bool:
+    title = normalize_text(_safe_page_title(page))
+    body = normalize_text(_safe_page_body_text(page))
+    return (
+        "access denied" in title
+        or "you don't have permission" in body
+        or "errors.edgesuite.net" in body
+    )
+
+
+def _ebay_is_transient_wait_page(page: Any) -> bool:
+    body = normalize_text(_safe_page_body_text(page))
+    return (
+        "ci scusiamo per l'attesa" in body
+        or "ci scusiamo per l attesa" in body
+        or "sorry for the wait" in body
+        or "sorry for the delay" in body
+        or "controllo del browser prima dell'accesso a ebay" in body
+        or "controllo del browser prima dell accesso a ebay" in body
+        or "a breve verrai reindirizzato ai contenuti richiesti" in body
+        or "attendi qualche istante" in body
+        or "browser check before accessing ebay" in body
+    )
+
+
+def _ebay_item_locator(page: Any) -> Any:
+    primary = page.locator("li.s-item")
+    if primary.count() > 0:
+        return primary
+    fallback = page.locator("ul.srp-results > li")
+    if fallback.count() > 0:
+        return fallback
+    return page.locator("li[data-view*='iid:']")
+
+
+def _wait_for_ebay_results(page: Any, timeout_ms: int) -> None:
+    wait_step_ms = 1000
+    max_wait_ms = min(timeout_ms, 15000)
+    elapsed_ms = 0
+    while elapsed_ms < max_wait_ms:
+        denied = _ebay_is_access_denied(page)
+        waiting = _ebay_is_transient_wait_page(page)
+        if denied and not waiting:
+            return
+        if not denied and not waiting:
+            if _ebay_item_locator(page).count() > 0:
+                return
+        page.wait_for_timeout(wait_step_ms)
+        elapsed_ms += wait_step_ms
+
+
+def _navigate_ebay_with_retries(
+    page: Any,
+    *,
+    url: str,
+    timeout_ms: int,
+    max_denied_retries: int,
+    name: str,
+) -> bool:
+    """Navigate to an eBay URL, retrying automatically on Access Denied.
+
+    Akamai blocks resolve on reload without any user interaction.
+    """
+    for attempt in range(1, max_denied_retries + 1):
+        try:
+            page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+        except PlaywrightTimeoutError:
+            print(f"[EBAY] Timeout navigazione (tentativo {attempt}/{max_denied_retries}).")
+            if attempt == max_denied_retries:
+                return False
+            continue
+        _wait_for_ebay_results(page, timeout_ms)
+        if not _ebay_is_access_denied(page):
+            return True
+        if attempt < max_denied_retries:
+            print(
+                f"[EBAY] Access Denied per '{name}' (tentativo {attempt}/{max_denied_retries}), riprovo..."
+            )
+    return False
+
+
+# ── eBay sold scraping ────────────────────────────────────────────────────────
+
+def scrape_ebay_sold(
+    page: Any,
+    *,
+    name: str,
+    url: str,
+    cardmarket_price: float,
+    max_items: int = 3,
+    timeout_ms: int = 120000,
+) -> tuple[float | None, list[float]]:
+    """Scrape Italian eBay sold listings for a product.
+
+    Navigates to the provided sold-listings URL, retrying automatically on
+    Access Denied (Akamai block resolved by reload, no user action needed).
+    Extracts prices from the first ``max_items`` rows that pass the quality
+    filter and returns ``(average_price, prices_used)``.
+
+    Items are accepted only inside this range around *cardmarket_price*:
+    - not below 20 % (>= 80 % of CardMarket)
+    - not above 40 % (<= 140 % of CardMarket)
+    """
+    if not _navigate_ebay_with_retries(
+        page,
+        url=url,
+        timeout_ms=timeout_ms,
+        max_denied_retries=3,
+        name=name,
+    ):
+        print(f"[EBAY] Access Denied su eBay dopo 3 tentativi per: {name}")
+        return None, []
+
+    items = _ebay_item_locator(page)
+    count = items.count()
+    print(f"[EBAY] Trovati {count} elementi nella pagina.")
+
+    min_acceptable = cardmarket_price * 0.80
+    max_acceptable = cardmarket_price * 1.40
+
+    prices: list[float] = []
+    for i in range(count):
+        if len(prices) >= max_items:
+            break
+        try:
+            item_text = items.nth(i).inner_text()
+        except Exception:
+            continue
+        price = extract_ebay_price(item_text)
+        if price is None:
+            continue
+        if price < min_acceptable:
+            print(f"[EBAY] Scarto {format_euro(price)} (< soglia {format_euro(min_acceptable)})")
+            continue
+        if price > max_acceptable:
+            print(f"[EBAY] Scarto {format_euro(price)} (> soglia {format_euro(max_acceptable)})")
+            continue
+        prices.append(price)
+
+    if not prices:
+        return None, []
+
+    avg = sum(prices) / len(prices)
+    return avg, prices
+
+
 def load_products(config_path: Path) -> list[dict[str, Any]]:
     data = json.loads(config_path.read_text(encoding="utf-8"))
     if not isinstance(data, list):
@@ -406,9 +599,46 @@ def main() -> None:
                 )
 
             results.append(result)
+
+            # ── eBay sold comparison ───────────────────────────────────────────
+            ebay_url_product = str(product.get("ebay_url", "")).strip()
+            if result.best_offer and ebay_url_product:
+                time.sleep(3)
+                print(f"[EBAY] Cerco venduti italiani su eBay per: {name}")
+                ebay_avg, ebay_prices = scrape_ebay_sold(
+                    page,
+                    name=name,
+                    url=ebay_url_product,
+                    cardmarket_price=result.best_offer.price,
+                )
+                result.ebay_url = ebay_url_product
+                result.ebay_avg_price = ebay_avg
+                result.ebay_prices_used = ebay_prices
+
+                if ebay_avg is not None:
+                    prices_str = ", ".join(format_euro(p) for p in ebay_prices)
+                    print(f"[EBAY] Prezzi usati: [{prices_str}] -> media {format_euro(ebay_avg)}")
+                    if ebay_avg < result.best_offer.price:
+                        result.final_price = ebay_avg
+                        result.final_source = "ebay"
+                        print(f"[EBAY] eBay ({format_euro(ebay_avg)}) < CardMarket ({result.best_offer.price_display}) -> uso eBay")
+                    else:
+                        result.final_price = result.best_offer.price
+                        result.final_source = "cardmarket"
+                        print(f"[EBAY] eBay ({format_euro(ebay_avg)}) >= CardMarket ({result.best_offer.price_display}) -> uso CardMarket")
+                else:
+                    result.final_price = result.best_offer.price
+                    result.final_source = "cardmarket"
+                    print("[EBAY] Nessun venduto eBay trovato -> uso CardMarket")
+            elif result.best_offer:
+                result.final_price = result.best_offer.price
+                result.final_source = "cardmarket"
+
             if result.best_offer is not None:
-                line_total = result.best_offer.price * result.quantity
-                print(f"[PREZZO] {result.name}: {result.best_offer.price_display} x {result.quantity} = {format_euro(line_total)}")
+                final_price = result.final_price if result.final_price is not None else result.best_offer.price
+                line_total = final_price * result.quantity
+                source_label = f" [{result.final_source}]" if result.final_source else ""
+                print(f"[PREZZO] {result.name}: {format_euro(final_price)}{source_label} x {result.quantity} = {format_euro(line_total)}")
             else:
                 print(f"[PREZZO] {result.name}: nessun prezzo valido trovato")
 
@@ -441,14 +671,20 @@ def main() -> None:
             if result.note:
                 print(f"Nota: {result.note}")
         else:
-            print(f"Prezzo minimo valido: {result.best_offer.price_display}")
-            line_total = result.best_offer.price * result.quantity
+            final_price = result.final_price if result.final_price is not None else result.best_offer.price
+            final_source = result.final_source or "cardmarket"
+            line_total = final_price * result.quantity
+
+            print(f"Prezzo minimo CardMarket: {result.best_offer.price_display}")
+            if result.ebay_avg_price is not None:
+                print(f"Media eBay venduti ({len(result.ebay_prices_used or [])} articoli): {format_euro(result.ebay_avg_price)}")
+            print(f"Prezzo finale usato [{final_source}]: {format_euro(final_price)}")
             print(f"Subtotale ({result.quantity}x): {format_euro(line_total)}")
             print(f"Estratto offerta: {result.best_offer.row_text[:220]}")
             if result.best_offer.comment_text:
                 print(f"Commento rilevato: {result.best_offer.comment_text[:220]}")
             values_list.append(
-                (result.name, result.quantity, result.best_offer.price, line_total, result.best_offer.price_display)
+                (result.name, result.quantity, final_price, line_total, format_euro(final_price))
             )
             row_data["best_offer"] = {
                 "price": result.best_offer.price,
@@ -456,6 +692,14 @@ def main() -> None:
                 "row_text": result.best_offer.row_text,
                 "comment_text": result.best_offer.comment_text,
             }
+            if result.ebay_url:
+                row_data["ebay_url"] = result.ebay_url
+                row_data["ebay_avg_price"] = result.ebay_avg_price
+                row_data["ebay_avg_price_display"] = format_euro(result.ebay_avg_price) if result.ebay_avg_price is not None else None
+                row_data["ebay_prices_used"] = result.ebay_prices_used or []
+            row_data["final_price"] = final_price
+            row_data["final_price_display"] = format_euro(final_price)
+            row_data["final_source"] = final_source
             row_data["line_total"] = line_total
             row_data["line_total_display"] = format_euro(line_total)
 
