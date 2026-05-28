@@ -342,6 +342,21 @@ def _ebay_is_access_denied(page: Any) -> bool:
     )
 
 
+def _ebay_is_server_error_page(page: Any) -> bool:
+    title = normalize_text(_safe_page_title(page))
+    body = normalize_text(_safe_page_body_text(page))
+    return (
+        title == "sorry"
+        or title.startswith("sorry ")
+        or "sorry something went wrong on our end" in body
+        or "sorry something went wrong on our end" in title
+        or "something went wrong on our end" in body
+        or "something went wrong on our end" in title
+        or "we are working on it" in body
+        or "si e verificato un problema" in body
+    )
+
+
 def _ebay_is_transient_wait_page(page: Any) -> bool:
     body = normalize_text(_safe_page_body_text(page))
     return (
@@ -373,10 +388,11 @@ def _wait_for_ebay_results(page: Any, timeout_ms: int) -> None:
     elapsed_ms = 0
     while elapsed_ms < max_wait_ms:
         denied = _ebay_is_access_denied(page)
+        server_error = _ebay_is_server_error_page(page)
         waiting = _ebay_is_transient_wait_page(page)
-        if denied and not waiting:
+        if (denied or server_error) and not waiting:
             return
-        if not denied and not waiting:
+        if not denied and not server_error and not waiting:
             if _ebay_item_locator(page).count() > 0:
                 return
         page.wait_for_timeout(wait_step_ms)
@@ -391,9 +407,10 @@ def _navigate_ebay_with_retries(
     max_denied_retries: int,
     name: str,
 ) -> bool:
-    """Navigate to an eBay URL, retrying automatically on Access Denied.
+    """Navigate to an eBay URL, retrying automatically on block/error pages.
 
-    Akamai blocks resolve on reload without any user interaction.
+    Access Denied and transient eBay error pages can resolve on reload
+    without any user interaction.
     """
     for attempt in range(1, max_denied_retries + 1):
         try:
@@ -404,11 +421,14 @@ def _navigate_ebay_with_retries(
                 return False
             continue
         _wait_for_ebay_results(page, timeout_ms)
-        if not _ebay_is_access_denied(page):
+        denied = _ebay_is_access_denied(page)
+        server_error = _ebay_is_server_error_page(page)
+        if not denied and not server_error:
             return True
         if attempt < max_denied_retries:
+            reason = "Access Denied" if denied else "errore pagina eBay"
             print(
-                f"[EBAY] Access Denied per '{name}' (tentativo {attempt}/{max_denied_retries}), riprovo..."
+                f"[EBAY] {reason} per '{name}' (tentativo {attempt}/{max_denied_retries}), riprovo..."
             )
     return False
 
@@ -442,7 +462,7 @@ def scrape_ebay_sold(
         max_denied_retries=3,
         name=name,
     ):
-        print(f"[EBAY] Access Denied su eBay dopo 3 tentativi per: {name}")
+        print(f"[EBAY] Blocco/errore eBay dopo 3 tentativi per: {name}")
         return None, []
 
     items = _ebay_item_locator(page)
