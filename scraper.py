@@ -91,6 +91,10 @@ def keyword_is_negated(text: str, keyword: str) -> bool:
     return False
 
 
+def has_non_negated_keyword(text: str, keyword: str) -> bool:
+    return has_keyword(text, keyword) and not keyword_is_negated(text, keyword)
+
+
 def has_uncertain_question_mark(text: str) -> bool:
     # Ignore '?' that appears inside URLs like '?timestamp=...'.
     text_no_urls = re.sub(r"https?://\S+", " ", text)
@@ -262,7 +266,7 @@ def scrape_product(
                 excluded_speculative += 1
                 continue
 
-            if normalized_required and not any(has_keyword(full_text, token) for token in normalized_required):
+            if normalized_required and not any(has_non_negated_keyword(full_text, token) for token in normalized_required):
                 excluded_required += 1
                 continue
 
