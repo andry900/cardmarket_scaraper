@@ -112,6 +112,12 @@ def format_euro(value: float) -> str:
     return f"{base} €"
 
 
+def _formula_price(value: float) -> str:
+    if value % 1 == 0:
+        return str(int(value))
+    return f"{value:.2f}".replace(".", ",")
+
+
 def extract_ebay_price(text: str) -> float | None:
     """Return the first EUR price found in eBay item text (item price, before shipping)."""
     match = _EBAY_PRICE_RE.search(text)
@@ -740,6 +746,11 @@ def main() -> None:
         for idx, (name, quantity, _unit_price, line_total, price_display) in enumerate(values_list, start=1):
             print(f"{idx}. {name}: {price_display} x {quantity} = {format_euro(line_total)}")
         print(f"Somma totale: {format_euro(total_sum)}")
+        formula_terms = []
+        for _name, quantity, unit_price, _line_total, _price_display in values_list:
+            p = _formula_price(unit_price)
+            formula_terms.append(f"{p}*{quantity}" if quantity > 1 else p)
+        print(f"Formula Google Sheet: ={'+'  .join(formula_terms)}")
 
     print(f"Numero oggetti esaminati (con quantita): {total_examined_objects}")
     print(f"Numero oggetti con prezzo valido: {total_with_valid_price}")
