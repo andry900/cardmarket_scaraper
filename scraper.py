@@ -515,6 +515,16 @@ def load_products(config_path: Path) -> list[dict[str, Any]]:
     return data
 
 
+def load_existing_results(output_path: Path) -> dict[str, dict[str, Any]]:
+    if not output_path.exists():
+        return {}
+    try:
+        data = json.loads(output_path.read_text(encoding="utf-8"))
+        return {r["url"]: r for r in data.get("results", [])}
+    except Exception:
+        return {}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Estrae il prezzo minimo CardMarket filtrando commenti indesiderati e condizioni speciali."
@@ -574,11 +584,26 @@ def main() -> None:
         default=11.0,
         help="Secondi massimi di attesa tra una richiesta pagina e la successiva.",
     )
+    parser.add_argument(
+        "--source",
+        choices=["all", "cardmarket", "ebay"],
+        default="all",
+        help="Fonte da cui estrarre i prezzi: 'all' (default), 'cardmarket' (solo CardMarket), 'ebay' (solo eBay usando prezzi CardMarket dal JSON precedente).",
+    )
 
     args = parser.parse_args()
     products = load_products(Path(args.config))
 
+    source = args.source
     results: list[ProductResult] = []
+
+    # For --source ebay we need CardMarket prices from a previous run.
+    existing_results: dict[str, dict[str, Any]] = {}
+    if source == "ebay":
+        existing_results = load_existing_results(Path(args.output_json))
+        if not existing_results:
+            print("[WARN] --source ebay: nessun risultato CardMarket precedente trovato in output-json. "
+                  "Esegui prima con --source cardmarket (o all) per popolare i prezzi di riferimento.")
 
     with sync_playwright() as p:
         launch_options: dict[str, Any] = {"headless": args.headless}
@@ -589,78 +614,132 @@ def main() -> None:
         page = context.new_page()
 
         for idx, product in enumerate(products):
-            if idx > 0:
-                min_delay = max(0.0, args.request_delay_seconds)
-                max_delay = max(min_delay, args.request_delay_max_seconds)
-                if max_delay > 0:
-                    delay = random.uniform(min_delay, max_delay)
-                    print(f"\n[INFO] Attendo {delay:.1f}s prima della prossima richiesta...")
-                    time.sleep(delay)
-
             name = str(product.get("name") or product.get("url"))
             url = str(product["url"])
             required_any = [str(x) for x in product.get("required_any", [])]
             quantity = max(1, int(product.get("quantity", 1)))
+            ebay_url_product = str(product.get("ebay_url", "")).strip()
 
-            try:
-                result = scrape_product(
-                    page,
-                    name=name,
-                    url=url,
-                    quantity=quantity,
-                    banned_words=args.banned,
-                    speculative_words=args.speculative,
-                    required_any=required_any,
-                    manual_challenge=args.manual_challenge,
-                    max_retries=args.max_retries,
-                )
-            except PlaywrightTimeoutError:
-                result = ProductResult(
-                    name=name,
-                    url=url,
-                    quantity=quantity,
-                    best_offer=None,
-                    scanned_rows=0,
-                    eligible_rows=0,
-                    excluded_banned=0,
-                    excluded_speculative=0,
-                    excluded_required=0,
-                    note="Timeout durante il caricamento pagina.",
-                )
+            # ── CardMarket scraping ────────────────────────────────────────────
+            if source in ("all", "cardmarket"):
+                if idx > 0:
+                    min_delay = max(0.0, args.request_delay_seconds)
+                    max_delay = max(min_delay, args.request_delay_max_seconds)
+                    if max_delay > 0:
+                        delay = random.uniform(min_delay, max_delay)
+                        print(f"\n[INFO] Attendo {delay:.1f}s prima della prossima richiesta...")
+                        time.sleep(delay)
+
+                try:
+                    result = scrape_product(
+                        page,
+                        name=name,
+                        url=url,
+                        quantity=quantity,
+                        banned_words=args.banned,
+                        speculative_words=args.speculative,
+                        required_any=required_any,
+                        manual_challenge=args.manual_challenge,
+                        max_retries=args.max_retries,
+                    )
+                except PlaywrightTimeoutError:
+                    result = ProductResult(
+                        name=name,
+                        url=url,
+                        quantity=quantity,
+                        best_offer=None,
+                        scanned_rows=0,
+                        eligible_rows=0,
+                        excluded_banned=0,
+                        excluded_speculative=0,
+                        excluded_required=0,
+                        note="Timeout durante il caricamento pagina.",
+                    )
+            else:
+                # --source ebay: rebuild a ProductResult from the previous run
+                prev = existing_results.get(url)
+                prev_offer = prev.get("best_offer") if prev else None
+                if prev_offer:
+                    best = OfferResult(
+                        price=float(prev_offer["price"]),
+                        price_display=str(prev_offer.get("price_display", "")),
+                        row_text=str(prev_offer.get("row_text", "")),
+                        comment_text=str(prev_offer.get("comment_text", "")),
+                    )
+                    result = ProductResult(
+                        name=name,
+                        url=url,
+                        quantity=quantity,
+                        best_offer=best,
+                        scanned_rows=int(prev.get("scanned_rows", 0)),
+                        eligible_rows=int(prev.get("eligible_rows", 0)),
+                        excluded_banned=int(prev.get("excluded_banned", 0)),
+                        excluded_speculative=int(prev.get("excluded_speculative", 0)),
+                        excluded_required=int(prev.get("excluded_required", 0)),
+                        note=prev.get("note"),
+                    )
+                    print(f"[EBAY] Uso prezzo CardMarket precedente per '{name}': {best.price_display}")
+                else:
+                    print(f"[EBAY] Nessun prezzo CardMarket precedente per '{name}', salto eBay.")
+                    result = ProductResult(
+                        name=name,
+                        url=url,
+                        quantity=quantity,
+                        best_offer=None,
+                        scanned_rows=0,
+                        eligible_rows=0,
+                        excluded_banned=0,
+                        excluded_speculative=0,
+                        excluded_required=0,
+                        note="Nessun prezzo CardMarket precedente disponibile per la ricerca eBay.",
+                    )
 
             results.append(result)
 
             # ── eBay sold comparison ───────────────────────────────────────────
-            ebay_url_product = str(product.get("ebay_url", "")).strip()
-            if result.best_offer and ebay_url_product:
-                time.sleep(3)
-                print(f"[EBAY] Cerco venduti italiani su eBay per: {name}")
-                ebay_avg, ebay_prices = scrape_ebay_sold(
-                    page,
-                    name=name,
-                    url=ebay_url_product,
-                    cardmarket_price=result.best_offer.price,
-                )
-                result.ebay_url = ebay_url_product
-                result.ebay_avg_price = ebay_avg
-                result.ebay_prices_used = ebay_prices
+            if source in ("all", "ebay"):
+                if result.best_offer and ebay_url_product:
+                    if source == "ebay" and idx > 0:
+                        min_delay = max(0.0, args.request_delay_seconds)
+                        max_delay = max(min_delay, args.request_delay_max_seconds)
+                        if max_delay > 0:
+                            delay = random.uniform(min_delay, max_delay)
+                            print(f"\n[INFO] Attendo {delay:.1f}s prima della prossima richiesta...")
+                            time.sleep(delay)
+                    elif source == "all":
+                        time.sleep(3)
 
-                if ebay_avg is not None:
-                    prices_str = ", ".join(format_euro(p) for p in ebay_prices)
-                    print(f"[EBAY] Prezzi usati: [{prices_str}] -> media {format_euro(ebay_avg)}")
-                    if ebay_avg < result.best_offer.price:
-                        result.final_price = ebay_avg
-                        result.final_source = "ebay"
-                        print(f"[EBAY] eBay ({format_euro(ebay_avg)}) < CardMarket ({result.best_offer.price_display}) -> uso eBay")
+                    print(f"[EBAY] Cerco venduti italiani su eBay per: {name}")
+                    ebay_avg, ebay_prices = scrape_ebay_sold(
+                        page,
+                        name=name,
+                        url=ebay_url_product,
+                        cardmarket_price=result.best_offer.price,
+                    )
+                    result.ebay_url = ebay_url_product
+                    result.ebay_avg_price = ebay_avg
+                    result.ebay_prices_used = ebay_prices
+
+                    if ebay_avg is not None:
+                        prices_str = ", ".join(format_euro(p) for p in ebay_prices)
+                        print(f"[EBAY] Prezzi usati: [{prices_str}] -> media {format_euro(ebay_avg)}")
+                        if ebay_avg < result.best_offer.price:
+                            result.final_price = ebay_avg
+                            result.final_source = "ebay"
+                            print(f"[EBAY] eBay ({format_euro(ebay_avg)}) < CardMarket ({result.best_offer.price_display}) -> uso eBay")
+                        else:
+                            result.final_price = result.best_offer.price
+                            result.final_source = "cardmarket"
+                            print(f"[EBAY] eBay ({format_euro(ebay_avg)}) >= CardMarket ({result.best_offer.price_display}) -> uso CardMarket")
                     else:
                         result.final_price = result.best_offer.price
                         result.final_source = "cardmarket"
-                        print(f"[EBAY] eBay ({format_euro(ebay_avg)}) >= CardMarket ({result.best_offer.price_display}) -> uso CardMarket")
-                else:
+                        print("[EBAY] Nessun venduto eBay trovato -> uso CardMarket")
+                elif result.best_offer:
                     result.final_price = result.best_offer.price
                     result.final_source = "cardmarket"
-                    print("[EBAY] Nessun venduto eBay trovato -> uso CardMarket")
             elif result.best_offer:
+                # --source cardmarket: no eBay lookup
                 result.final_price = result.best_offer.price
                 result.final_source = "cardmarket"
 
