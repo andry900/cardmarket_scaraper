@@ -35,6 +35,8 @@ Esempio:
 
 - `required_any` (opzionale): almeno una parola deve essere presente nell'offerta/commento.
 - Per Giratina PSA 9 usa `"psa9"` e `"psa 9"` come nel file esempio.
+- `ebay_language` (opzionale): forza filtro lingua per eBay (`it`, `jp`, `any`).
+  Se assente, lo scraper prova a inferirla automaticamente da `ebay_url` (`ita/italiano` -> `it`, `jap/japan` -> `jp`).
 
 ## Esecuzione
 
@@ -154,6 +156,23 @@ Per ogni offerta:
 Lo scraper eBay lavora in modalita guest: non richiede login.
 Se eBay mostra popup o pagina di accesso, lo script prova automaticamente a chiuderla/bypassarla e ritenta.
 Se eBay continua a forzare login, quel prodotto viene saltato su eBay e resta valido il prezzo CardMarket.
+
+## Filtro lingua eBay
+
+Per evitare annunci in lingua sbagliata:
+
+- prodotti italiani: accetta indicatori tipo `ITA`, `italiano` o keyword del set dalla query;
+- prodotti giapponesi: accetta indicatori tipo `jap`, `japan`, `giapponese` o keyword della query;
+- scarta annunci con marker della lingua opposta.
+
+Puoi forzare la lingua per singolo prodotto in `products.json`:
+
+```json
+{
+  "name": "Umbreon ex (sv8a 217) - PSA 10",
+  "ebay_language": "jp"
+}
+```
 
 ## Nota su Cloudflare
 

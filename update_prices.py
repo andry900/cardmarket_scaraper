@@ -126,6 +126,7 @@ def main() -> None:
                     name=name,
                     url=ebay_url,
                     cardmarket_price=cardmarket_price,
+                    expected_language=item.get("ebay_language"),
                 )
 
                 item["ebay_avg_price"] = ebay_avg

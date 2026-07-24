@@ -6,6 +6,7 @@ import json
 import random
 import re
 import time
+from urllib.parse import parse_qs, unquote_plus, urlparse
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -41,6 +42,19 @@ NEGATING_PREFIXES = ["no", "non", "senza", "nessun", "nessuna", "nessuno", "priv
 
 # eBay price extraction: matches "EUR 45,99" or "45,99 EUR" anywhere in row text.
 _EBAY_PRICE_RE = re.compile(r"EUR\s*([0-9][0-9\.\,]*)|([0-9][0-9\.\,]*)\s*EUR", re.IGNORECASE)
+
+_EBAY_IT_MARKERS = [
+    " ita ", " italiano ", " italian ", " lingua italiana ", " in italiano ", " edizione italiana ",
+]
+_EBAY_JP_MARKERS = [
+    " jap ", " japan ", " japanese ", " giapponese ", " jpn ", " jp ", " japonais ",
+]
+_GENERIC_QUERY_TOKENS = {
+    "pokemon", "booster", "box", "bundle", "mini", "tin", "collection", "elite", "trainer", "etb",
+    "special", "illustration", "card", "cards", "set", "single", "singles", "psa", "bgs", "cgc",
+    "ita", "italiano", "italiana", "italian", "jap", "japan", "japanese", "giapponese", "jpn", "jp",
+    "v", "ex", "sv", "tg", "lor", "sit",
+}
 
 
 @dataclass
@@ -149,6 +163,80 @@ def extract_ebay_price(text: str) -> float | None:
         return parse_euro(amount_str)
     except ValueError:
         return None
+
+
+def _extract_ebay_query_hint_tokens(url: str) -> set[str]:
+    """Extract meaningful keyword hints from _nkw query text."""
+    try:
+        parsed = urlparse(url)
+        query = parse_qs(parsed.query)
+        nkw_raw = query.get("_nkw", [""])[0]
+        nkw_text = normalize_text(unquote_plus(nkw_raw))
+        tokens = re.findall(r"[a-z0-9]{3,}", nkw_text)
+    except Exception:
+        return set()
+
+    hints: set[str] = set()
+    for token in tokens:
+        if token in _GENERIC_QUERY_TOKENS:
+            continue
+        if token.isdigit():
+            continue
+        hints.add(token)
+    return hints
+
+
+def infer_ebay_expected_language(url: str, configured_language: str | None = None) -> str:
+    """Infer expected listing language: any, it, jp."""
+    if configured_language:
+        lang = normalize_text(configured_language)
+        if lang in {"it", "italian", "italiano"}:
+            return "it"
+        if lang in {"jp", "jpn", "japanese", "giapponese", "jap"}:
+            return "jp"
+        return "any"
+
+    low = normalize_text(unquote_plus(url))
+    if any(marker.strip() in low for marker in ["jap", "japan", "japanese", "giapponese", "jpn", "jp"]):
+        return "jp"
+    if any(marker.strip() in low for marker in ["ita", "italiano", "italiana", "italian"]):
+        return "it"
+    return "any"
+
+
+def _contains_any_marker(text: str, markers: list[str]) -> bool:
+    hay = f" {normalize_text(text)} "
+    return any(marker in hay for marker in markers)
+
+
+def ebay_item_matches_language(
+    item_text: str,
+    *,
+    expected_language: str,
+    query_hint_tokens: set[str],
+) -> bool:
+    """Return True if an eBay item text is compatible with expected language."""
+    if expected_language == "any":
+        return True
+
+    text = normalize_text(item_text)
+    text_spaced = f" {text} "
+    has_it = _contains_any_marker(text, _EBAY_IT_MARKERS)
+    has_jp = _contains_any_marker(text, _EBAY_JP_MARKERS)
+
+    has_hint_token = any(token in text_spaced for token in query_hint_tokens)
+
+    if expected_language == "it":
+        if has_jp:
+            return False
+        return has_it or has_hint_token
+
+    if expected_language == "jp":
+        if has_it:
+            return False
+        return has_jp or has_hint_token
+
+    return True
 
 
 def extract_price(row_text: str) -> tuple[float, str] | None:
@@ -541,6 +629,7 @@ def scrape_ebay_sold(
     name: str,
     url: str,
     cardmarket_price: float,
+    expected_language: str | None = None,
     max_items: int = 3,
     timeout_ms: int = 120000,
 ) -> tuple[float | None, list[float]]:
@@ -555,6 +644,9 @@ def scrape_ebay_sold(
     - not below 20 % (>= 80 % of CardMarket)
     - not above 40 % (<= 140 % of CardMarket)
     """
+    resolved_language = infer_ebay_expected_language(url, expected_language)
+    hint_tokens = _extract_ebay_query_hint_tokens(url)
+
     def collect_prices(active_page: Any) -> tuple[float | None, list[float]]:
         items = _ebay_item_locator(active_page)
         count = items.count()
@@ -564,12 +656,20 @@ def scrape_ebay_sold(
         max_acceptable = cardmarket_price * 1.40
 
         prices: list[float] = []
+        excluded_language = 0
         for i in range(count):
             if len(prices) >= max_items:
                 break
             try:
                 item_text = items.nth(i).inner_text()
             except Exception:
+                continue
+            if not ebay_item_matches_language(
+                item_text,
+                expected_language=resolved_language,
+                query_hint_tokens=hint_tokens,
+            ):
+                excluded_language += 1
                 continue
             price = extract_ebay_price(item_text)
             if price is None:
@@ -581,6 +681,9 @@ def scrape_ebay_sold(
                 print(f"[EBAY] Scarto {format_euro(price)} (> soglia {format_euro(max_acceptable)})")
                 continue
             prices.append(price)
+
+        if excluded_language:
+            print(f"[EBAY] Esclusi {excluded_language} annunci per mismatch lingua ({resolved_language}).")
 
         if not prices:
             return None, []
@@ -837,6 +940,7 @@ def main() -> None:
             required_any = [str(x) for x in product.get("required_any", [])]
             quantity = max(1, int(product.get("quantity", 1)))
             ebay_url_product = str(product.get("ebay_url", "")).strip()
+            ebay_language_product = str(product.get("ebay_language", "")).strip() or None
 
             # ── CardMarket scraping ────────────────────────────────────────────
             if source in ("all", "cardmarket"):
@@ -934,6 +1038,7 @@ def main() -> None:
                         name=name,
                         url=ebay_url_product,
                         cardmarket_price=result.best_offer.price,
+                        expected_language=ebay_language_product,
                     )
                     result.ebay_url = ebay_url_product
                     result.ebay_avg_price = ebay_avg

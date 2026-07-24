@@ -3,12 +3,14 @@
     "name": "Evolving Skies Booster Box",
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Booster-Boxes/Evolving-Skies-Booster-Box?language=5&minCondition=2",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Evoluzioni+eteree+Box+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "it",
     "quantity": 1
   },
   {
     "name": "Giratina V (LOR 186) - PSA 9",
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Singles/Lost-Origin/Giratina-V-V3-LOR186?language=5&minCondition=2",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Giratina+V+alternative+PSA+9&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "it",
     "required_any": [
       "psa 9",
       "bgs 9"
@@ -19,6 +21,7 @@
     "name": "Umbreon ex (sv8a 217) - PSA 10",
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Singles/Terastal-Festival-ex/Umbreon-ex-V2-sv8a217?language=7&minCondition=2",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Umbreon+ex+sv8a+217+PSA+10+jap&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "jp",
     "required_any": [
       "psa 10"
     ],
@@ -28,6 +31,7 @@
     "name": "Lugia V (SIT 186)",
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Singles/Silver-Tempest/Lugia-V-V3-SIT186?language=5&minCondition=2",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Lugia+V+186+PSA+9&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "it",
     "required_any": [
       "psa 9",
       "bgs 9"
@@ -38,66 +42,77 @@
     "name": "Phantasmal Flames Booster Box",
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Booster-Boxes/Phantasmal-Flames-Booster-Box?language=5",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Fiamme+Spettrali+Booster+Box+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "it",
     "quantity": 1
   },
   {
     "name": "Prismatic Evolutions Elite Trainer Box",
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Elite-Trainer-Boxes/Prismatic-Evolutions-Elite-Trainer-Box?language=5&minCondition=2",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Evoluzioni+Prismatiche+ETB+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "it",
     "quantity": 1
   },
   {
     "name": "Shrouded Fable Greninja ex Special Illustration Collection",
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Box-Sets/Shrouded-Fable-Greninja-ex-Special-Illustration-Collection?language=5&minCondition=2",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Segreto+Fiabesco+collezione+Greninja+ex&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "it",
     "quantity": 1
   },
   {
     "name": "Shrouded Fable Kingdra ex Special Illustration Collection",
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Box-Sets/Shrouded-Fable-Kingdra-ex-Special-Illustration-Collection?language=5&minCondition=2",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Segreto+Fiabesco+collezione+Kingdra+ex&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "it",
     "quantity": 1
   },
   {
     "name": "Ascended Heroes Elite Trainer Box",
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Elite-Trainer-Boxes/Ascended-Heroes-Elite-Trainer-Box?language=5",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Ascesa+Eroica+ETB+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "it",
     "quantity": 1
   },
   {
     "name": "Journey Together Elite Trainer Box",
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Elite-Trainer-Boxes/Journey-Together-Elite-Trainer-Box?language=5&minCondition=2",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Avventure+Insieme+ETB+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "it",
     "quantity": 1
   },
   {
     "name": "Gengar (LOR TG06)",
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Singles/Lost-Origin/Gengar-V2-LORTG06?language=5&minCondition=2",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Gengar+TG06+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "it",
     "quantity": 1
   },
   {
     "name": "Charizard (LOR TG03)",
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Singles/Lost-Origin/Charizard-LORTG03?sellerCountry=17&language=5&minCondition=2",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Charizard+TG03+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "it",
     "quantity": 1
   },
   {
     "name": "151 Booster Bundle",
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Booster-Boxes/151-Booster-Bundle?language=5&minCondition=2",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+151+Booster+Bundle+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "it",
     "quantity": 4
   },
   {
     "name": "Prismatic Evolutions Booster Bundle",
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Booster-Boxes/Prismatic-Evolutions-Booster-Bundle?language=5&minCondition=2",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Evoluzioni+Prismatiche+Booster+Bundle+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "it",
     "quantity": 3
   },
   {
     "name": "Prismatic Evolutions Glaceon Mini Tin",
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Tins/Prismatic-Evolutions-Glaceon-Mini-Tin?language=5&minCondition=2",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Evoluzioni+Prismatiche+Mini+Tin+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "it",
     "quantity": 2
   }
 ]
