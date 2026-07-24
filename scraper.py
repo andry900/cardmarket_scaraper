@@ -16,7 +16,26 @@ from playwright.sync_api import sync_playwright
 
 EURO_PATTERN = re.compile(r"(\d{1,3}(?:\.\d{3})*,\d{2})\s*€|€\s*(\d{1,3}(?:\.\d{3})*,\d{2})")
 DEFAULT_BANNED = ["foro", "fori", "graffi", "buco", "hole", "scratch", "damaged", "danneggiato", "rotto", "broke", "crepa", "rovinat", "difett", "dmg", "difect", "wear"]
-DEFAULT_SPECULATIVE = ["possibile", "papabile", "could be", "possible"]
+DEFAULT_SPECULATIVE = [
+    "possibile",
+    "papabile",
+    "could be",
+    "possible",
+    "maybe",
+    "perhaps",
+    "potential",
+    "potenziale",
+    "probabile",
+    "probably",
+    "candidate",
+    "candidato",
+    "candidata",
+    "grading candidate",
+    "candidato grading",
+    "for grading",
+    "da gradare",
+    "to grade",
+]
 COMMENT_ATTRS = ["title", "data-bs-original-title", "aria-label", "data-original-title"]
 NEGATING_PREFIXES = ["no", "non", "senza", "nessun", "nessuna", "nessuno", "privo di", "priva di", "privi di", "prive di", "senza alcun", "senza alcuna", "senza alcuno", "without", "free of", "free from", "no signs of"]
 
@@ -168,16 +187,30 @@ def scrape_product(
     speculative_words: list[str],
     required_any: list[str],
     manual_challenge: bool,
+    manual_challenge_timeout_seconds: int,
     max_retries: int = 3,
 ) -> ProductResult:
     def is_challenge(p: Any) -> bool:
         title = p.title().strip().lower()
         body = normalize_text(p.inner_text("body"))
+        content_lc = p.content().lower()
         return (
             "just a moment" in title
             or "enable javascript and cookies to continue" in body
-            or "challenge-platform" in p.content().lower()
+            or "challenge-platform" in content_lc
+            or "esecuzione della verifica di sicurezza" in body
+            or "verifica di sicurezza" in body
+            or "controllo di sicurezza" in body
+            or "cloudflare" in body and "verifica" in body
         )
+
+    def wait_until_challenge_cleared(timeout_seconds: int) -> bool:
+        deadline = time.time() + max(1, timeout_seconds)
+        while time.time() < deadline:
+            if not is_challenge(page):
+                return True
+            page.wait_for_timeout(1500)
+        return not is_challenge(page)
 
     for attempt in range(1, max_retries + 1):
         page.goto(url, wait_until="domcontentloaded", timeout=120000)
@@ -190,9 +223,12 @@ def scrape_product(
             print(f"[INFO] Challenge Cloudflare (tentativo {attempt}/{max_retries}) per: {name}")
             print("[INFO] Risolvi il challenge nel browser aperto, poi premi INVIO qui.")
             input()
-            page.wait_for_timeout(3000)
-            if not is_challenge(page):
+            print(
+                f"[INFO] Verifico risoluzione challenge (attendo fino a {manual_challenge_timeout_seconds}s)..."
+            )
+            if wait_until_challenge_cleared(manual_challenge_timeout_seconds):
                 break
+            print("[WARN] Challenge ancora attiva dopo il timeout manuale.")
         else:
             wait_sec = 15 * attempt
             print(f"[INFO] Challenge rilevata per: {name} (tentativo {attempt}/{max_retries}), riprovo tra {wait_sec}s...")
@@ -382,6 +418,45 @@ def _ebay_is_transient_wait_page(page: Any) -> bool:
     )
 
 
+def _ebay_is_login_page(page: Any) -> bool:
+    url = normalize_text(page.url)
+    title = normalize_text(_safe_page_title(page))
+    body = normalize_text(_safe_page_body_text(page))
+    return (
+        "signin.ebay" in url
+        or "/signin" in url
+        or "account/signin" in url
+        or "accedi" in title and "ebay" in title
+        or "sign in" in title and "ebay" in title
+        or "registrati o accedi" in body
+        or "accedi o registrati" in body
+        or "continua con l accesso" in body
+        or "continue with sign in" in body
+    )
+
+
+def _ebay_try_dismiss_login(page: Any) -> None:
+    selectors = [
+        "button:has-text('No grazie')",
+        "button:has-text('Non ora')",
+        "button:has-text('Continua senza')",
+        "button:has-text('Continue without')",
+        "button:has-text('Maybe later')",
+        "button:has-text('Resta disconnesso')",
+        "button[aria-label='Chiudi']",
+        "button[aria-label='Close']",
+        "#passkeys-cancel-btn",
+    ]
+    for selector in selectors:
+        try:
+            el = page.locator(selector)
+            if el.count() > 0 and el.first.is_visible():
+                el.first.click(timeout=2000)
+                page.wait_for_timeout(1000)
+        except Exception:
+            continue
+
+
 def _ebay_item_locator(page: Any) -> Any:
     primary = page.locator("li.s-item")
     if primary.count() > 0:
@@ -433,10 +508,25 @@ def _navigate_ebay_with_retries(
         _wait_for_ebay_results(page, timeout_ms)
         denied = _ebay_is_access_denied(page)
         server_error = _ebay_is_server_error_page(page)
-        if not denied and not server_error:
+        login_page = _ebay_is_login_page(page)
+
+        if login_page:
+            print(f"[EBAY] Prompt login rilevato per '{name}', provo modalita guest...")
+            _ebay_try_dismiss_login(page)
+            _wait_for_ebay_results(page, timeout_ms)
+            denied = _ebay_is_access_denied(page)
+            server_error = _ebay_is_server_error_page(page)
+            login_page = _ebay_is_login_page(page)
+
+        if not denied and not server_error and not login_page:
             return True
         if attempt < max_denied_retries:
-            reason = "Access Denied" if denied else "errore pagina eBay"
+            if denied:
+                reason = "Access Denied"
+            elif server_error:
+                reason = "errore pagina eBay"
+            else:
+                reason = "pagina login eBay"
             print(
                 f"[EBAY] {reason} per '{name}' (tentativo {attempt}/{max_denied_retries}), riprovo..."
             )
@@ -465,47 +555,70 @@ def scrape_ebay_sold(
     - not below 20 % (>= 80 % of CardMarket)
     - not above 40 % (<= 140 % of CardMarket)
     """
-    if not _navigate_ebay_with_retries(
+    def collect_prices(active_page: Any) -> tuple[float | None, list[float]]:
+        items = _ebay_item_locator(active_page)
+        count = items.count()
+        print(f"[EBAY] Trovati {count} elementi nella pagina.")
+
+        min_acceptable = cardmarket_price * 0.80
+        max_acceptable = cardmarket_price * 1.40
+
+        prices: list[float] = []
+        for i in range(count):
+            if len(prices) >= max_items:
+                break
+            try:
+                item_text = items.nth(i).inner_text()
+            except Exception:
+                continue
+            price = extract_ebay_price(item_text)
+            if price is None:
+                continue
+            if price < min_acceptable:
+                print(f"[EBAY] Scarto {format_euro(price)} (< soglia {format_euro(min_acceptable)})")
+                continue
+            if price > max_acceptable:
+                print(f"[EBAY] Scarto {format_euro(price)} (> soglia {format_euro(max_acceptable)})")
+                continue
+            prices.append(price)
+
+        if not prices:
+            return None, []
+        avg = sum(prices) / len(prices)
+        return avg, prices
+
+    # First attempt on the current page (usually more trusted in CDP sessions).
+    if _navigate_ebay_with_retries(
         page,
         url=url,
         timeout_ms=timeout_ms,
         max_denied_retries=3,
         name=name,
     ):
-        print(f"[EBAY] Blocco/errore eBay dopo 3 tentativi per: {name}")
-        return None, []
+        avg, prices = collect_prices(page)
+        if avg is not None:
+            return avg, prices
 
-    items = _ebay_item_locator(page)
-    count = items.count()
-    print(f"[EBAY] Trovati {count} elementi nella pagina.")
+    # Fallback on a fresh tab if current page failed or yielded no data.
+    print(f"[EBAY] Nessun risultato utile sul tab corrente per '{name}', provo su nuovo tab...")
+    ebay_page = page.context.new_page()
+    try:
+        if not _navigate_ebay_with_retries(
+            ebay_page,
+            url=url,
+            timeout_ms=timeout_ms,
+            max_denied_retries=3,
+            name=name,
+        ):
+            print(f"[EBAY] Blocco/errore eBay dopo 3 tentativi per: {name}")
+            return None, []
 
-    min_acceptable = cardmarket_price * 0.80
-    max_acceptable = cardmarket_price * 1.40
-
-    prices: list[float] = []
-    for i in range(count):
-        if len(prices) >= max_items:
-            break
+        return collect_prices(ebay_page)
+    finally:
         try:
-            item_text = items.nth(i).inner_text()
+            ebay_page.close()
         except Exception:
-            continue
-        price = extract_ebay_price(item_text)
-        if price is None:
-            continue
-        if price < min_acceptable:
-            print(f"[EBAY] Scarto {format_euro(price)} (< soglia {format_euro(min_acceptable)})")
-            continue
-        if price > max_acceptable:
-            print(f"[EBAY] Scarto {format_euro(price)} (> soglia {format_euro(max_acceptable)})")
-            continue
-        prices.append(price)
-
-    if not prices:
-        return None, []
-
-    avg = sum(prices) / len(prices)
-    return avg, prices
+            pass
 
 
 def load_products(config_path: Path) -> list[dict[str, Any]]:
@@ -523,6 +636,65 @@ def load_existing_results(output_path: Path) -> dict[str, dict[str, Any]]:
         return {r["url"]: r for r in data.get("results", [])}
     except Exception:
         return {}
+
+
+def create_browser_context(p: Any, args: argparse.Namespace) -> tuple[Any, Any, bool]:
+    """Create a Playwright context using the requested browser strategy.
+
+    Returns (browser, context, context_is_browser).
+    If context_is_browser is True, the context itself owns the browser process and
+    closing context is enough.
+    """
+    mode = args.browser_mode
+
+    if mode == "persistent-chrome":
+        if args.headless:
+            raise ValueError("La modalita persistent-chrome richiede browser visibile (senza --headless).")
+
+        profile_dir = str(Path(args.user_data_dir).resolve())
+        launch_kwargs: dict[str, Any] = {
+            "headless": False,
+            "locale": "it-IT",
+            "args": [
+                "--disable-blink-features=AutomationControlled",
+                "--disable-infobars",
+            ],
+            "ignore_default_args": ["--enable-automation"],
+        }
+
+        # If user passes Brave path (or any Chromium browser), prefer it.
+        if args.browser_executable_path.strip():
+            launch_kwargs["executable_path"] = args.browser_executable_path.strip()
+        else:
+            launch_kwargs["channel"] = "chrome"
+
+        context = p.chromium.launch_persistent_context(profile_dir, **launch_kwargs)
+        return context.browser, context, True
+
+    if mode == "connect-cdp":
+        if not args.cdp_url.strip():
+            raise ValueError("Per --browser-mode connect-cdp devi impostare --cdp-url.")
+
+        try:
+            browser = p.chromium.connect_over_cdp(args.cdp_url.strip())
+        except PlaywrightError as exc:
+            raise ValueError(
+                "Impossibile connettersi a CDP. Avvia Brave/Chrome con "
+                "--remote-debugging-port=9222 e verifica che la porta sia in ascolto. "
+                f"Dettaglio: {exc}"
+            ) from exc
+        if browser.contexts:
+            context = browser.contexts[0]
+        else:
+            context = browser.new_context(locale="it-IT")
+        return browser, context, False
+
+    launch_options: dict[str, Any] = {"headless": args.headless}
+    if args.browser_executable_path.strip():
+        launch_options["executable_path"] = args.browser_executable_path.strip()
+    browser = p.chromium.launch(**launch_options)
+    context = browser.new_context(locale="it-IT")
+    return browser, context, False
 
 
 def main() -> None:
@@ -563,6 +735,12 @@ def main() -> None:
         help="Numero massimo di tentativi automatici in caso di challenge Cloudflare.",
     )
     parser.add_argument(
+        "--manual-challenge-timeout-seconds",
+        type=int,
+        default=180,
+        help="Timeout attesa risoluzione challenge manuale dopo INVIO (default: 180s).",
+    )
+    parser.add_argument(
         "--output-json",
         default="results.json",
         help="File JSON di output con i risultati.",
@@ -590,9 +768,41 @@ def main() -> None:
         default="all",
         help="Fonte da cui estrarre i prezzi: 'all' (default), 'cardmarket' (solo CardMarket), 'ebay' (solo eBay usando prezzi CardMarket dal JSON precedente).",
     )
+    parser.add_argument(
+        "--browser-mode",
+        choices=["playwright", "persistent-chrome", "connect-cdp"],
+        default="playwright",
+        help=(
+            "Strategia browser: 'playwright' (default), 'persistent-chrome' (Chrome reale con profilo persistente), "
+            "'connect-cdp' (si collega a Chrome gia aperto via DevTools)."
+        ),
+    )
+    parser.add_argument(
+        "--user-data-dir",
+        default=".browser_profile",
+        help="Cartella profilo per --browser-mode persistent-chrome (default: .browser_profile).",
+    )
+    parser.add_argument(
+        "--cdp-url",
+        default="http://127.0.0.1:9222",
+        help="URL DevTools per --browser-mode connect-cdp (default: http://127.0.0.1:9222).",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=0,
+        help="Limita il numero di prodotti processati (0 = tutti). Utile per test rapidi.",
+    )
+    parser.add_argument(
+        "--use-existing-page",
+        action="store_true",
+        help="Con --browser-mode connect-cdp riusa il primo tab gia aperto invece di crearne uno nuovo.",
+    )
 
     args = parser.parse_args()
     products = load_products(Path(args.config))
+    if args.limit > 0:
+        products = products[:args.limit]
 
     source = args.source
     results: list[ProductResult] = []
@@ -606,12 +816,20 @@ def main() -> None:
                   "Esegui prima con --source cardmarket (o all) per popolare i prezzi di riferimento.")
 
     with sync_playwright() as p:
-        launch_options: dict[str, Any] = {"headless": args.headless}
-        if args.browser_executable_path.strip():
-            launch_options["executable_path"] = args.browser_executable_path.strip()
-        browser = p.chromium.launch(**launch_options)
-        context = browser.new_context(locale="it-IT")
-        page = context.new_page()
+        browser, context, context_is_browser = create_browser_context(p, args)
+        if args.browser_mode == "connect-cdp" and args.use_existing_page:
+            existing_pages = [pg for pg in context.pages if not pg.url.startswith("about:blank")]
+            if existing_pages:
+                page = existing_pages[0]
+                print(f"[INFO] Riuso tab esistente: {page.url}")
+            else:
+                page = context.new_page()
+                print("[INFO] Nessun tab esistente trovato, apro un nuovo tab.")
+        else:
+            page = context.new_page()
+
+        # Reduce basic automation fingerprint in JS-exposed fields.
+        page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined});")
 
         for idx, product in enumerate(products):
             name = str(product.get("name") or product.get("url"))
@@ -640,6 +858,7 @@ def main() -> None:
                         speculative_words=args.speculative,
                         required_any=required_any,
                         manual_challenge=args.manual_challenge,
+                        manual_challenge_timeout_seconds=args.manual_challenge_timeout_seconds,
                         max_retries=args.max_retries,
                     )
                 except PlaywrightTimeoutError:
@@ -752,7 +971,8 @@ def main() -> None:
                 print(f"[PREZZO] {result.name}: nessun prezzo valido trovato")
 
         context.close()
-        browser.close()
+        if not context_is_browser:
+            browser.close()
 
     payload: list[dict[str, Any]] = []
     values_list: list[tuple[str, int, float, float, str]] = []
