@@ -16,7 +16,12 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
 EURO_PATTERN = re.compile(r"(\d{1,3}(?:\.\d{3})*,\d{2})\s*€|€\s*(\d{1,3}(?:\.\d{3})*,\d{2})")
-DEFAULT_BANNED = ["foro", "fori", "graffi", "buco", "hole", "scratch", "damaged", "danneggiato", "rotto", "broke", "crepa", "rovinat", "difett", "dmg", "difect", "wear"]
+DEFAULT_BANNED = [
+    "foro", "fori", "graffi", "buco", "hole", "scratch",
+    "damaged", "danneggiato", "rotto", "broke", "crepa", "rovinat", "difett", "dmg", "difect", "wear",
+    "dent", "ding", "shock on", "shock al", "transport damage", "damage from transport",
+    "damage in shipping", "damaged in transit", "ammaccato", "ammaccatura",
+]
 DEFAULT_SPECULATIVE = [
     "possibile",
     "papabile",
@@ -630,6 +635,7 @@ def scrape_ebay_sold(
     url: str,
     cardmarket_price: float,
     expected_language: str | None = None,
+    banned_words: list[str] | None = None,
     max_items: int = 3,
     timeout_ms: int = 120000,
 ) -> tuple[float | None, list[float]]:
@@ -646,6 +652,7 @@ def scrape_ebay_sold(
     """
     resolved_language = infer_ebay_expected_language(url, expected_language)
     hint_tokens = _extract_ebay_query_hint_tokens(url)
+    normalized_banned = [normalize_text(w) for w in (banned_words if banned_words is not None else DEFAULT_BANNED)]
 
     def collect_prices(active_page: Any) -> tuple[float | None, list[float]]:
         items = _ebay_item_locator(active_page)
@@ -670,6 +677,12 @@ def scrape_ebay_sold(
                 query_hint_tokens=hint_tokens,
             ):
                 excluded_language += 1
+                continue
+            item_text_norm = normalize_text(item_text)
+            if any(
+                has_keyword(item_text_norm, w) and not keyword_is_negated(item_text_norm, w)
+                for w in normalized_banned
+            ):
                 continue
             price = extract_ebay_price(item_text)
             if price is None:
@@ -1039,6 +1052,7 @@ def main() -> None:
                         url=ebay_url_product,
                         cardmarket_price=result.best_offer.price,
                         expected_language=ebay_language_product,
+                        banned_words=args.banned,
                     )
                     result.ebay_url = ebay_url_product
                     result.ebay_avg_price = ebay_avg
