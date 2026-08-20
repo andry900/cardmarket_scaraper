@@ -68,6 +68,7 @@ class OfferResult:
     price_display: str
     row_text: str
     comment_text: str
+    effective_price: float | None = None
 
 
 @dataclass
@@ -96,7 +97,7 @@ def normalize_text(value: str) -> str:
 
 
 def compact_text(value: str) -> str:
-    return normalize_text(value).replace(" ", "")
+    return re.sub(r"[^\w]+", "", normalize_text(value))
 
 
 def has_keyword(text: str, keyword: str) -> bool:
@@ -279,6 +280,8 @@ def scrape_product(
     banned_words: list[str],
     speculative_words: list[str],
     required_any: list[str],
+    discount_any: list[str],
+    discount_percent: float,
     manual_challenge: bool,
     manual_challenge_timeout_seconds: int,
     max_retries: int = 3,
@@ -350,6 +353,7 @@ def scrape_product(
     normalized_banned = [normalize_text(x) for x in banned_words]
     normalized_speculative = [normalize_text(x) for x in speculative_words]
     normalized_required = [normalize_text(x) for x in required_any]
+    normalized_discount = [normalize_text(x) for x in discount_any]
 
     def get_rows():
         r = page.locator("div.row.g-0.article-row")
@@ -406,23 +410,28 @@ def scrape_product(
                 continue
 
             eligible_rows += 1
+            effective_price = price
+            if normalized_discount and any(has_non_negated_keyword(full_text, word) for word in normalized_discount):
+                effective_price = round(price * (1 - discount_percent / 100), 2)
             candidate = OfferResult(
                 price=price,
                 price_display=price_display,
                 row_text=row_text_raw,
                 comment_text=comment_text,
+                effective_price=effective_price,
             )
-            if best_offer is None or candidate.price < best_offer.price:
+            if best_offer is None or effective_price < (best_offer.effective_price or best_offer.price):
                 best_offer = candidate
 
         processed_count = row_count
 
-        # Listings are ordered by price ascending, so if we already found
-        # a valid offer in the currently loaded rows we can stop here.
-        if best_offer is not None:
+        # Products without discounts can stop at the first valid offer because
+        # Cardmarket listings are ordered by price ascending.
+        if best_offer is not None and not normalized_discount:
             break
 
-        # Keep loading more results to ensure we capture the true minimum price.
+        # Discounted grading labels may make a later listing cheaper after the
+        # discount, so continue loading results for those products.
         more_btn = page.locator("button:has-text('MOSTRA PIÙ RISULTATI'), a:has-text('MOSTRA PIÙ RISULTATI')")
         if more_btn.count() == 0:
             break
@@ -951,6 +960,8 @@ def main() -> None:
             name = str(product.get("name") or product.get("url"))
             url = str(product["url"])
             required_any = [str(x) for x in product.get("required_any", [])]
+            discount_any = [str(x) for x in product.get("discount_any", [])]
+            discount_percent = float(product.get("discount_percent", 0))
             quantity = max(1, int(product.get("quantity", 1)))
             ebay_url_product = str(product.get("ebay_url", "")).strip()
             ebay_language_product = str(product.get("ebay_language", "")).strip() or None
@@ -974,6 +985,8 @@ def main() -> None:
                         banned_words=args.banned,
                         speculative_words=args.speculative,
                         required_any=required_any,
+                        discount_any=discount_any,
+                        discount_percent=discount_percent,
                         manual_challenge=args.manual_challenge,
                         manual_challenge_timeout_seconds=args.manual_challenge_timeout_seconds,
                         max_retries=args.max_retries,
@@ -1001,6 +1014,7 @@ def main() -> None:
                         price_display=str(prev_offer.get("price_display", "")),
                         row_text=str(prev_offer.get("row_text", "")),
                         comment_text=str(prev_offer.get("comment_text", "")),
+                        effective_price=prev_offer.get("effective_price"),
                     )
                     result = ProductResult(
                         name=name,
@@ -1050,7 +1064,7 @@ def main() -> None:
                         page,
                         name=name,
                         url=ebay_url_product,
-                        cardmarket_price=result.best_offer.price,
+                        cardmarket_price=result.best_offer.effective_price or result.best_offer.price,
                         expected_language=ebay_language_product,
                         banned_words=args.banned,
                     )
@@ -1061,24 +1075,25 @@ def main() -> None:
                     if ebay_avg is not None:
                         prices_str = ", ".join(format_euro(p) for p in ebay_prices)
                         print(f"[EBAY] Prezzi usati: [{prices_str}] -> media {format_euro(ebay_avg)}")
-                        if ebay_avg < result.best_offer.price:
+                        effective_price = result.best_offer.effective_price or result.best_offer.price
+                        if ebay_avg < effective_price:
                             result.final_price = ebay_avg
                             result.final_source = "ebay"
                             print(f"[EBAY] eBay ({format_euro(ebay_avg)}) < CardMarket ({result.best_offer.price_display}) -> uso eBay")
                         else:
-                            result.final_price = result.best_offer.price
+                            result.final_price = effective_price
                             result.final_source = "cardmarket"
                             print(f"[EBAY] eBay ({format_euro(ebay_avg)}) >= CardMarket ({result.best_offer.price_display}) -> uso CardMarket")
                     else:
-                        result.final_price = result.best_offer.price
+                        result.final_price = effective_price
                         result.final_source = "cardmarket"
                         print("[EBAY] Nessun venduto eBay trovato -> uso CardMarket")
                 elif result.best_offer:
-                    result.final_price = result.best_offer.price
+                    result.final_price = result.best_offer.effective_price or result.best_offer.price
                     result.final_source = "cardmarket"
             elif result.best_offer:
                 # --source cardmarket: no eBay lookup
-                result.final_price = result.best_offer.price
+                result.final_price = result.best_offer.effective_price or result.best_offer.price
                 result.final_source = "cardmarket"
 
             if result.best_offer is not None:
@@ -1136,6 +1151,7 @@ def main() -> None:
             )
             row_data["best_offer"] = {
                 "price": result.best_offer.price,
+                "effective_price": result.best_offer.effective_price or result.best_offer.price,
                 "price_display": result.best_offer.price_display,
                 "row_text": result.best_offer.row_text,
                 "comment_text": result.best_offer.comment_text,

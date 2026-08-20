@@ -89,6 +89,9 @@ def main() -> None:
             continue
         item["best_offer"]["price"] = new_price
         item["best_offer"]["price_display"] = format_euro(new_price)
+        old_effective = item["best_offer"].get("effective_price", old_price)
+        if old_price and old_effective is not None:
+            item["best_offer"]["effective_price"] = round(new_price * old_effective / old_price, 2)
         if old_price != new_price:
             print(f"[CM] {item['name']}: {format_euro(old_price) if old_price else '?'} → {format_euro(new_price)}")
             updated_count += 1
@@ -119,7 +122,7 @@ def main() -> None:
                     print(f"[INFO] Attendo {delay:.1f}s...")
                     time.sleep(delay)
 
-                cardmarket_price = best_offer["price"]
+                cardmarket_price = best_offer.get("effective_price", best_offer["price"])
                 print(f"[EBAY] Scraping: {name} (soglia CM: {format_euro(cardmarket_price)})")
                 ebay_avg, ebay_prices = scrape_ebay_sold(
                     page,
@@ -146,7 +149,7 @@ def main() -> None:
         best_offer = item.get("best_offer")
         if best_offer is None:
             continue
-        cm_price = best_offer["price"]
+        cm_price = best_offer.get("effective_price", best_offer["price"])
         ebay_avg = item.get("ebay_avg_price")
         quantity = item.get("quantity", 1)
 

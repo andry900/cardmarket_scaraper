@@ -10,55 +10,57 @@
       "excluded_speculative": 0,
       "excluded_required": 0,
       "best_offer": {
-        "price": 1799.0,
-        "price_display": "1.799,00 €",
-        "row_text": "882\nProgct01\n1.799,00 €\n1",
-        "comment_text": "882 vendite | 885 articoli disponibili locazione dell'oggetto: italia professionale italiano devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia professionale italiano devi aver effettuato il login per comprare articoli. italiano"
+        "price": 1650.0,
+        "effective_price": 1650.0,
+        "price_display": "1.650,00 €",
+        "row_text": "0\nCase7467\nCase di plastica in omaggio\n1.650,00 €\n1",
+        "comment_text": "0 vendite | 2 articoli disponibili locazione dell'oggetto: italia italiano <img src=\"https://marketplace-article-scans.s3.cardmarket.com/2121660046/2121660046t.jpg?timestamp=2026-08-20 09:44:50\" alt=\"scan\"> case di plastica in omaggio devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano <img src=\"https://marketplace-article-scans.s3.cardmarket.com/2121660046/2121660046t.jpg?timestamp=2026-08-20 09:44:50\" alt=\"scan\"> case di plastica in omaggio devi aver effettuato il login per comprare articoli. italiano"
       },
       "note": null,
       "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Evoluzioni+eteree+Box+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
-      "ebay_avg_price": 1966.3333333333333,
-      "ebay_avg_price_display": "1.966,33 €",
+      "ebay_avg_price": 1766.3333333333333,
+      "ebay_avg_price_display": "1.766,33 €",
       "ebay_prices_used": [
-        1899.0,
-        2200.0,
-        1800.0
+        1400.0,
+        2000.0,
+        1899.0
       ],
-      "final_price": 1799.0,
-      "final_price_display": "1.799,00 €",
+      "final_price": 1650.0,
+      "final_price_display": "1.650,00 €",
       "final_source": "cardmarket",
-      "line_total": 1799.0,
-      "line_total_display": "1.799,00 €"
+      "line_total": 1650.0,
+      "line_total_display": "1.650,00 €"
     },
     {
       "name": "Giratina V (LOR 186) - PSA 9",
       "url": "https://www.cardmarket.com/it/Pokemon/Products/Singles/Lost-Origin/Giratina-V-V3-LOR186?language=5&minCondition=2",
       "quantity": 1,
-      "scanned_rows": 23,
-      "eligible_rows": 6,
-      "excluded_banned": 6,
+      "scanned_rows": 20,
+      "eligible_rows": 7,
+      "excluded_banned": 5,
       "excluded_speculative": 0,
-      "excluded_required": 11,
+      "excluded_required": 8,
       "best_offer": {
-        "price": 800.0,
-        "price_display": "800,00 €",
-        "row_text": "145\nPdenicola\nNM\nPSA 9\n800,00 €\n1",
-        "comment_text": "145 vendite | 21 articoli disponibili locazione dell'oggetto: italia near mint italiano psa 9 devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano psa 9 devi aver effettuato il login per comprare articoli. italiano"
+        "price": 799.95,
+        "effective_price": 799.95,
+        "price_display": "799,95 €",
+        "row_text": "452\nJjjjjj420\nMT\nPSA 9 MINT FAST Shipping!\n799,95 €\n1",
+        "comment_text": "452 vendite | 302 articoli disponibili locazione dell'oggetto: olanda mint italiano <img src=\"https://marketplace-article-scans.s3.cardmarket.com/2117451282/2117451282t.jpg?timestamp=2026-08-20 09:45:05\" alt=\"scan\"> psa 9 mint fast shipping! devi aver effettuato il login per comprare articoli. locazione dell'oggetto: olanda italiano <img src=\"https://marketplace-article-scans.s3.cardmarket.com/2117451282/2117451282t.jpg?timestamp=2026-08-20 09:45:05\" alt=\"scan\"> psa 9 mint fast shipping! devi aver effettuato il login per comprare articoli. italiano"
       },
       "note": null,
       "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Giratina+V+alternative+PSA+9&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
-      "ebay_avg_price": 980.64,
-      "ebay_avg_price_display": "980,64 €",
+      "ebay_avg_price": 862.6666666666666,
+      "ebay_avg_price_display": "862,67 €",
       "ebay_prices_used": [
         949.0,
         929.0,
-        1063.92
+        710.0
       ],
-      "final_price": 800.0,
-      "final_price_display": "800,00 €",
+      "final_price": 799.95,
+      "final_price_display": "799,95 €",
       "final_source": "cardmarket",
-      "line_total": 800.0,
-      "line_total_display": "800,00 €"
+      "line_total": 799.95,
+      "line_total_display": "799,95 €"
     },
     {
       "name": "Umbreon ex (sv8a 217) - PSA 10",
@@ -66,14 +68,15 @@
       "quantity": 1,
       "scanned_rows": 100,
       "eligible_rows": 1,
-      "excluded_banned": 12,
+      "excluded_banned": 10,
       "excluded_speculative": 4,
-      "excluded_required": 83,
+      "excluded_required": 85,
       "best_offer": {
-        "price": 590.0,
-        "price_display": "590,00 €",
-        "row_text": "3\nRaindrop123\nMT\nPSA 10\n590,00 €\n1",
-        "comment_text": "3 vendite | 4 articoli disponibili locazione dell'oggetto: svizzera mint giapponese <img src=\"https://marketplace-article-scans.s3.cardmarket.com/2115525741/2115525741t.jpg?timestamp=2026-07-30 19:24:51\" alt=\"scan\"> psa 10 devi aver effettuato il login per comprare articoli. locazione dell'oggetto: svizzera giapponese <img src=\"https://marketplace-article-scans.s3.cardmarket.com/2115525741/2115525741t.jpg?timestamp=2026-07-30 19:24:51\" alt=\"scan\"> psa 10 devi aver effettuato il login per comprare articoli. giapponese"
+        "price": 650.0,
+        "effective_price": 650.0,
+        "price_display": "650,00 €",
+        "row_text": "793\nmostrodemare\nMT\nPSA 10! AMAZING CARD (free gift)\n650,00 €\n1",
+        "comment_text": "793 vendite | 70 articoli disponibili locazione dell'oggetto: italia mint giapponese psa 10! amazing card (free gift) devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia giapponese psa 10! amazing card (free gift) devi aver effettuato il login per comprare articoli. giapponese"
       },
       "note": null,
       "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Umbreon+ex+sv8a+217+PSA+10+jap&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
@@ -84,116 +87,149 @@
         750.0,
         749.0
       ],
-      "final_price": 590.0,
-      "final_price_display": "590,00 €",
+      "final_price": 650.0,
+      "final_price_display": "650,00 €",
       "final_source": "cardmarket",
-      "line_total": 590.0,
-      "line_total_display": "590,00 €"
+      "line_total": 650.0,
+      "line_total_display": "650,00 €"
     },
     {
       "name": "Lugia V (SIT 186)",
       "url": "https://www.cardmarket.com/it/Pokemon/Products/Singles/Silver-Tempest/Lugia-V-V3-SIT186?language=5&minCondition=2",
       "quantity": 1,
-      "scanned_rows": 50,
-      "eligible_rows": 2,
-      "excluded_banned": 9,
+      "scanned_rows": 49,
+      "eligible_rows": 3,
+      "excluded_banned": 7,
       "excluded_speculative": 1,
       "excluded_required": 38,
       "best_offer": {
         "price": 599.0,
+        "effective_price": 599.0,
         "price_display": "599,00 €",
         "row_text": "27\nfabrizioberardinelli\nMT\nPSA 9\n599,00 €\n1",
-        "comment_text": "27 vendite | 214 articoli disponibili locazione dell'oggetto: italia professionale mint italiano <img src=\"https://marketplace-article-scans.s3.cardmarket.com/2116794649/2116794649t.jpg?timestamp=2026-07-30 19:25:07\" alt=\"scan\"> psa 9 devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia professionale italiano <img src=\"https://marketplace-article-scans.s3.cardmarket.com/2116794649/2116794649t.jpg?timestamp=2026-07-30 19:25:07\" alt=\"scan\"> psa 9 devi aver effettuato il login per comprare articoli. italiano"
+        "comment_text": "27 vendite | 213 articoli disponibili locazione dell'oggetto: italia professionale mint italiano <img src=\"https://marketplace-article-scans.s3.cardmarket.com/2116794649/2116794649t.jpg?timestamp=2026-08-20 09:45:51\" alt=\"scan\"> psa 9 devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia professionale italiano <img src=\"https://marketplace-article-scans.s3.cardmarket.com/2116794649/2116794649t.jpg?timestamp=2026-08-20 09:45:51\" alt=\"scan\"> psa 9 devi aver effettuato il login per comprare articoli. italiano"
       },
       "note": null,
       "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Lugia+V+186+PSA+9&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
-      "ebay_avg_price": 541.0,
-      "ebay_avg_price_display": "541,00 €",
+      "ebay_avg_price": 526.0,
+      "ebay_avg_price_display": "526,00 €",
       "ebay_prices_used": [
-        528.0,
-        565.0,
-        530.0
+        500.0,
+        550.0,
+        528.0
       ],
-      "final_price": 541.0,
-      "final_price_display": "541,00 €",
+      "final_price": 526.0,
+      "final_price_display": "526,00 €",
       "final_source": "ebay",
-      "line_total": 541.0,
-      "line_total_display": "541,00 €"
+      "line_total": 526.0,
+      "line_total_display": "526,00 €"
+    },
+    {
+      "name": "Espeon V (EVS 180) - AI Grading 9",
+      "url": "https://www.cardmarket.com/it/Pokemon/Products/Singles/Evolving-Skies/Espeon-V-V3-EVS180?language=5&minCondition=2",
+      "quantity": 1,
+      "scanned_rows": 29,
+      "eligible_rows": 8,
+      "excluded_banned": 2,
+      "excluded_speculative": 0,
+      "excluded_required": 19,
+      "best_offer": {
+        "price": 250.0,
+        "effective_price": 200.0,
+        "price_display": "250,00 €",
+        "row_text": "7\nK\nTimetwistergames\nNM\n[PSA 9.0]\n250,00 €\n1",
+        "comment_text": "7580 vendite | 11300 articoli disponibili locazione dell'oggetto: italia professionale near mint italiano [psa 9.0] devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia professionale italiano [psa 9.0] devi aver effettuato il login per comprare articoli. italiano"
+      },
+      "note": null,
+      "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Espeon+V+180+AI+grading+9&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+      "ebay_avg_price": 180.0,
+      "ebay_avg_price_display": "180,00 €",
+      "ebay_prices_used": [
+        180.0
+      ],
+      "final_price": 180.0,
+      "final_price_display": "180,00 €",
+      "final_source": "ebay",
+      "line_total": 180.0,
+      "line_total_display": "180,00 €"
     },
     {
       "name": "Phantasmal Flames Booster Box",
       "url": "https://www.cardmarket.com/it/Pokemon/Products/Booster-Boxes/Phantasmal-Flames-Booster-Box?language=5",
       "quantity": 1,
-      "scanned_rows": 50,
-      "eligible_rows": 49,
-      "excluded_banned": 1,
+      "scanned_rows": 49,
+      "eligible_rows": 47,
+      "excluded_banned": 2,
       "excluded_speculative": 0,
       "excluded_required": 0,
       "best_offer": {
-        "price": 199.0,
-        "price_display": "199,00 €",
-        "row_text": "28\nmattuccio94\nSealed perfect condition\n199,00 €\n1",
-        "comment_text": "28 vendite | 902 articoli disponibili locazione dell'oggetto: italia italiano sealed perfect condition devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano sealed perfect condition devi aver effettuato il login per comprare articoli. italiano"
+        "price": 209.99,
+        "effective_price": 209.99,
+        "price_display": "209,99 €",
+        "row_text": "36\nBoBoXy\nSealed\n209,99 €\n1",
+        "comment_text": "36 vendite | 71 articoli disponibili locazione dell'oggetto: italia italiano sealed devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano sealed devi aver effettuato il login per comprare articoli. italiano"
       },
       "note": null,
       "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Fiamme+Spettrali+Booster+Box+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
-      "ebay_avg_price": 225.29666666666665,
-      "ebay_avg_price_display": "225,30 €",
+      "ebay_avg_price": 208.26333333333332,
+      "ebay_avg_price_display": "208,26 €",
       "ebay_prices_used": [
         199.99,
-        235.9,
-        240.0
+        240.0,
+        184.8
       ],
-      "final_price": 199.0,
-      "final_price_display": "199,00 €",
-      "final_source": "cardmarket",
-      "line_total": 199.0,
-      "line_total_display": "199,00 €"
+      "final_price": 208.26333333333332,
+      "final_price_display": "208,26 €",
+      "final_source": "ebay",
+      "line_total": 208.26333333333332,
+      "line_total_display": "208,26 €"
     },
     {
       "name": "Prismatic Evolutions Elite Trainer Box",
       "url": "https://www.cardmarket.com/it/Pokemon/Products/Elite-Trainer-Boxes/Prismatic-Evolutions-Elite-Trainer-Box?language=5&minCondition=2",
       "quantity": 1,
       "scanned_rows": 50,
-      "eligible_rows": 49,
-      "excluded_banned": 1,
+      "eligible_rows": 47,
+      "excluded_banned": 3,
       "excluded_speculative": 0,
       "excluded_required": 0,
       "best_offer": {
-        "price": 85.0,
-        "price_display": "85,00 €",
-        "row_text": "256\nBaroneRosso92\nSigillato con pellicola, ulteriori foto su richiesta\n85,00 €\n1",
-        "comment_text": "256 vendite | 39 articoli disponibili locazione dell'oggetto: italia italiano <img src=\"https://marketplace-article-scans.s3.cardmarket.com/2121489602/2121489602t.jpg?timestamp=2026-07-30 19:25:40\" alt=\"scan\"> sigillato con pellicola, ulteriori foto su richiesta sigillato con pellicola, ulteriori foto su richiesta devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano <img src=\"https://marketplace-article-scans.s3.cardmarket.com/2121489602/2121489602t.jpg?timestamp=2026-07-30 19:25:40\" alt=\"scan\"> sigillato con pellicola, ulteriori foto su richiesta devi aver effettuato il login per comprare articoli. italiano"
+        "price": 89.0,
+        "effective_price": 89.0,
+        "price_display": "89,00 €",
+        "row_text": "271\nDamianonegro\n89,00 €\n1",
+        "comment_text": "271 vendite | 47 articoli disponibili locazione dell'oggetto: italia italiano devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano devi aver effettuato il login per comprare articoli. italiano"
       },
       "note": null,
       "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Evoluzioni+Prismatiche+ETB+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
-      "ebay_avg_price": 99.76333333333332,
-      "ebay_avg_price_display": "99,76 €",
+      "ebay_avg_price": 91.63333333333333,
+      "ebay_avg_price_display": "91,63 €",
       "ebay_prices_used": [
-        99.3,
-        99.99,
-        100.0
+        89.9,
+        105.0,
+        80.0
       ],
-      "final_price": 85.0,
-      "final_price_display": "85,00 €",
+      "final_price": 89.0,
+      "final_price_display": "89,00 €",
       "final_source": "cardmarket",
-      "line_total": 85.0,
-      "line_total_display": "85,00 €"
+      "line_total": 89.0,
+      "line_total_display": "89,00 €"
     },
     {
       "name": "Shrouded Fable Greninja ex Special Illustration Collection",
       "url": "https://www.cardmarket.com/it/Pokemon/Products/Box-Sets/Shrouded-Fable-Greninja-ex-Special-Illustration-Collection?language=5&minCondition=2",
       "quantity": 1,
-      "scanned_rows": 11,
-      "eligible_rows": 10,
+      "scanned_rows": 13,
+      "eligible_rows": 12,
       "excluded_banned": 1,
       "excluded_speculative": 0,
       "excluded_required": 0,
       "best_offer": {
-        "price": 75.0,
-        "price_display": "75,00 €",
-        "row_text": "1\nK\nSpeedy1010\n75,00 €\n1",
-        "comment_text": "1224 vendite | 2464 articoli disponibili locazione dell'oggetto: italia professionale italiano <img src=\"https://marketplace-article-scans.s3.cardmarket.com/2119543194/2119543194t.jpg?timestamp=2026-07-30 19:25:56\" alt=\"scan\"> devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia professionale italiano <img src=\"https://marketplace-article-scans.s3.cardmarket.com/2119543194/2119543194t.jpg?timestamp=2026-07-30 19:25:56\" alt=\"scan\"> devi aver effettuato il login per comprare articoli. italiano"
+        "price": 70.0,
+        "effective_price": 70.0,
+        "price_display": "70,00 €",
+        "row_text": "1\nK\nSpeedy1010\n70,00 €\n1",
+        "comment_text": "1248 vendite | 2587 articoli disponibili locazione dell'oggetto: italia professionale italiano <img src=\"https://marketplace-article-scans.s3.cardmarket.com/2119543194/2119543194t.jpg?timestamp=2026-08-20 09:47:04\" alt=\"scan\"> devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia professionale italiano <img src=\"https://marketplace-article-scans.s3.cardmarket.com/2119543194/2119543194t.jpg?timestamp=2026-08-20 09:47:04\" alt=\"scan\"> devi aver effettuato il login per comprare articoli. italiano"
       },
       "note": null,
       "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Segreto+Fiabesco+collezione+Greninja+ex&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
@@ -204,26 +240,27 @@
         80.0,
         90.0
       ],
-      "final_price": 75.0,
-      "final_price_display": "75,00 €",
+      "final_price": 70.0,
+      "final_price_display": "70,00 €",
       "final_source": "cardmarket",
-      "line_total": 75.0,
-      "line_total_display": "75,00 €"
+      "line_total": 70.0,
+      "line_total_display": "70,00 €"
     },
     {
       "name": "Shrouded Fable Kingdra ex Special Illustration Collection",
       "url": "https://www.cardmarket.com/it/Pokemon/Products/Box-Sets/Shrouded-Fable-Kingdra-ex-Special-Illustration-Collection?language=5&minCondition=2",
       "quantity": 1,
-      "scanned_rows": 14,
-      "eligible_rows": 14,
+      "scanned_rows": 13,
+      "eligible_rows": 13,
       "excluded_banned": 0,
       "excluded_speculative": 0,
       "excluded_required": 0,
       "best_offer": {
-        "price": 69.9,
-        "price_display": "69,90 €",
-        "row_text": "85\nFant10\nDisponibile anche greninja\n69,90 €\n1",
-        "comment_text": "85 vendite | 38 articoli disponibili locazione dell'oggetto: italia italiano disponibile anche greninja devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano disponibile anche greninja devi aver effettuato il login per comprare articoli. italiano"
+        "price": 70.0,
+        "effective_price": 70.0,
+        "price_display": "70,00 €",
+        "row_text": "89\nKarenMorhenShop\nGreninja disponibile\n70,00 €\n1",
+        "comment_text": "89 vendite | 23 articoli disponibili locazione dell'oggetto: italia italiano greninja disponibile devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano greninja disponibile devi aver effettuato il login per comprare articoli. italiano"
       },
       "note": null,
       "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Segreto+Fiabesco+collezione+Kingdra+ex&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
@@ -234,41 +271,42 @@
         84.98,
         79.9
       ],
-      "final_price": 69.9,
-      "final_price_display": "69,90 €",
+      "final_price": 70.0,
+      "final_price_display": "70,00 €",
       "final_source": "cardmarket",
-      "line_total": 69.9,
-      "line_total_display": "69,90 €"
+      "line_total": 70.0,
+      "line_total_display": "70,00 €"
     },
     {
       "name": "Ascended Heroes Elite Trainer Box",
       "url": "https://www.cardmarket.com/it/Pokemon/Products/Elite-Trainer-Boxes/Ascended-Heroes-Elite-Trainer-Box?language=5",
       "quantity": 1,
       "scanned_rows": 50,
-      "eligible_rows": 49,
-      "excluded_banned": 1,
+      "eligible_rows": 48,
+      "excluded_banned": 2,
       "excluded_speculative": 0,
       "excluded_required": 0,
       "best_offer": {
-        "price": 63.98,
-        "price_display": "63,98 €",
-        "row_text": "9\nviky91\nSealed perfetto\n63,98 €\n1",
-        "comment_text": "9 vendite | 16 articoli disponibili locazione dell'oggetto: italia italiano sealed perfetto devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano sealed perfetto devi aver effettuato il login per comprare articoli. italiano"
+        "price": 68.0,
+        "effective_price": 68.0,
+        "price_display": "68,00 €",
+        "row_text": "25\nStefix1\nSealed\n68,00 €\n1",
+        "comment_text": "25 vendite | 31 articoli disponibili locazione dell'oggetto: italia italiano sealed devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano sealed devi aver effettuato il login per comprare articoli. italiano"
       },
       "note": null,
       "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Ascesa+Eroica+ETB+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
-      "ebay_avg_price": 74.96333333333332,
-      "ebay_avg_price_display": "74,96 €",
+      "ebay_avg_price": 75.63,
+      "ebay_avg_price_display": "75,63 €",
       "ebay_prices_used": [
-        74.9,
-        74.99,
-        75.0
+        79.9,
+        71.0,
+        75.99
       ],
-      "final_price": 63.98,
-      "final_price_display": "63,98 €",
+      "final_price": 68.0,
+      "final_price_display": "68,00 €",
       "final_source": "cardmarket",
-      "line_total": 63.98,
-      "line_total_display": "63,98 €"
+      "line_total": 68.0,
+      "line_total_display": "68,00 €"
     },
     {
       "name": "Journey Together Elite Trainer Box",
@@ -281,6 +319,7 @@
       "excluded_required": 0,
       "best_offer": {
         "price": 45.0,
+        "effective_price": 45.0,
         "price_display": "45,00 €",
         "row_text": "59\nLight167\nDoppia pellicola gedis - pellicola esterna perfetta pellicola interna rotta\n45,00 €\n1",
         "comment_text": "59 vendite | 1 articoli disponibili locazione dell'oggetto: italia italiano doppia pellicola gedis - pellicola esterna perfetta pellicola interna rotta doppia pellicola gedis - pellicola esterna perfetta pellicola interna rotta devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano doppia pellicola gedis - pellicola esterna perfetta pellicola interna rotta devi aver effettuato il login per comprare articoli. italiano"
@@ -305,90 +344,93 @@
       "url": "https://www.cardmarket.com/it/Pokemon/Products/Singles/Lost-Origin/Gengar-V2-LORTG06?language=5&minCondition=2",
       "quantity": 1,
       "scanned_rows": 50,
-      "eligible_rows": 50,
-      "excluded_banned": 0,
+      "eligible_rows": 49,
+      "excluded_banned": 1,
       "excluded_speculative": 0,
       "excluded_required": 0,
       "best_offer": {
-        "price": 24.9,
-        "price_display": "24,90 €",
-        "row_text": "25\nCantellos\nNM\nBooster -> Sleeve -> Toploader\n24,90 €\n1",
-        "comment_text": "25 vendite | 8 articoli disponibili locazione dell'oggetto: italia near mint italiano booster -> sleeve -> toploader devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano booster -> sleeve -> toploader devi aver effettuato il login per comprare articoli. italiano"
+        "price": 25.0,
+        "effective_price": 25.0,
+        "price_display": "25,00 €",
+        "row_text": "91\nAndreaferrari230797\nNM\n25,00 €\n1",
+        "comment_text": "91 vendite | 19 articoli disponibili locazione dell'oggetto: italia near mint italiano devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano devi aver effettuato il login per comprare articoli. italiano"
       },
       "note": null,
       "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Gengar+TG06+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
-      "ebay_avg_price": 29.853333333333335,
-      "ebay_avg_price_display": "29,85 €",
+      "ebay_avg_price": 28.326666666666664,
+      "ebay_avg_price_display": "28,33 €",
       "ebay_prices_used": [
+        25.0,
         29.99,
-        29.67,
-        29.9
+        29.99
       ],
-      "final_price": 24.9,
-      "final_price_display": "24,90 €",
+      "final_price": 25.0,
+      "final_price_display": "25,00 €",
       "final_source": "cardmarket",
-      "line_total": 24.9,
-      "line_total_display": "24,90 €"
+      "line_total": 25.0,
+      "line_total_display": "25,00 €"
     },
     {
       "name": "Charizard (LOR TG03)",
       "url": "https://www.cardmarket.com/it/Pokemon/Products/Singles/Lost-Origin/Charizard-LORTG03?sellerCountry=17&language=5&minCondition=2",
       "quantity": 1,
-      "scanned_rows": 48,
-      "eligible_rows": 47,
-      "excluded_banned": 1,
+      "scanned_rows": 35,
+      "eligible_rows": 33,
+      "excluded_banned": 2,
       "excluded_speculative": 0,
       "excluded_required": 0,
       "best_offer": {
-        "price": 19.0,
-        "price_display": "19,00 €",
-        "row_text": "265\nFairynuke\nNM\nsmall whitening in the back\n19,00 €\n1",
-        "comment_text": "265 vendite | 214 articoli disponibili locazione dell'oggetto: italia near mint italiano small whitening in the back devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano small whitening in the back devi aver effettuato il login per comprare articoli. italiano"
+        "price": 25.0,
+        "effective_price": 25.0,
+        "price_display": "25,00 €",
+        "row_text": "2\nK\nImpavido\nNM\n25,00 €\n2",
+        "comment_text": "2893 vendite | 188 articoli disponibili locazione dell'oggetto: italia near mint italiano devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano devi aver effettuato il login per comprare articoli. italiano"
       },
       "note": null,
       "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Charizard+TG03+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
-      "ebay_avg_price": 21.166666666666668,
-      "ebay_avg_price_display": "21,17 €",
+      "ebay_avg_price": 30.3,
+      "ebay_avg_price_display": "30,30 €",
       "ebay_prices_used": [
-        18.5,
-        20.0,
-        25.0
+        29.9,
+        26.0,
+        35.0
       ],
-      "final_price": 19.0,
-      "final_price_display": "19,00 €",
+      "final_price": 25.0,
+      "final_price_display": "25,00 €",
       "final_source": "cardmarket",
-      "line_total": 19.0,
-      "line_total_display": "19,00 €"
+      "line_total": 25.0,
+      "line_total_display": "25,00 €"
     },
     {
       "name": "151 Booster Bundle",
       "url": "https://www.cardmarket.com/it/Pokemon/Products/Booster-Boxes/151-Booster-Bundle?language=5&minCondition=2",
       "quantity": 4,
       "scanned_rows": 50,
-      "eligible_rows": 48,
-      "excluded_banned": 2,
+      "eligible_rows": 50,
+      "excluded_banned": 0,
       "excluded_speculative": 0,
       "excluded_required": 0,
       "best_offer": {
-        "price": 77.89,
-        "price_display": "77,89 €",
-        "row_text": "48\nsavy99\nSIGILLATO, FAST SHIP\n77,89 €\n1",
-        "comment_text": "48 vendite | 55 articoli disponibili locazione dell'oggetto: italia italiano sigillato, fast ship devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano sigillato, fast ship devi aver effettuato il login per comprare articoli. italiano"
+        "price": 83.0,
+        "effective_price": 83.0,
+        "price_display": "83,00 €",
+        "row_text": "30\nGiuseppe--02\nSEALED - FAST SHIP\n83,00 €\n1",
+        "comment_text": "30 vendite | 5 articoli disponibili locazione dell'oggetto: italia italiano sealed - fast ship devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano sealed - fast ship devi aver effettuato il login per comprare articoli. italiano"
       },
       "note": null,
       "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+151+Booster+Bundle+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
-      "ebay_avg_price": 89.93,
-      "ebay_avg_price_display": "89,93 €",
+      "ebay_avg_price": 89.99,
+      "ebay_avg_price_display": "89,99 €",
       "ebay_prices_used": [
-        94.9,
-        84.9,
+        89.99,
+        89.99,
         89.99
       ],
-      "final_price": 77.89,
-      "final_price_display": "77,89 €",
+      "final_price": 83.0,
+      "final_price_display": "83,00 €",
       "final_source": "cardmarket",
-      "line_total": 311.56,
-      "line_total_display": "311,56 €"
+      "line_total": 332.0,
+      "line_total_display": "332,00 €"
     },
     {
       "name": "Prismatic Evolutions Booster Bundle",
@@ -400,49 +442,51 @@
       "excluded_speculative": 0,
       "excluded_required": 0,
       "best_offer": {
-        "price": 42.9,
-        "price_display": "42,90 €",
-        "row_text": "75\nFilippocards\nSealed, fast ship\n42,90 €\n1",
-        "comment_text": "75 vendite | 21 articoli disponibili locazione dell'oggetto: italia italiano sealed, fast ship devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano sealed, fast ship devi aver effettuato il login per comprare articoli. italiano"
+        "price": 43.9,
+        "effective_price": 43.9,
+        "price_display": "43,90 €",
+        "row_text": "38\nmanuel01g\nSealed, fast shipping\n43,90 €\n1",
+        "comment_text": "38 vendite | 1 articoli disponibili locazione dell'oggetto: italia italiano sealed, fast shipping devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano sealed, fast shipping devi aver effettuato il login per comprare articoli. italiano"
       },
       "note": null,
       "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Evoluzioni+Prismatiche+Booster+Bundle+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
-      "ebay_avg_price": 50.93,
-      "ebay_avg_price_display": "50,93 €",
+      "ebay_avg_price": 50.626666666666665,
+      "ebay_avg_price_display": "50,63 €",
       "ebay_prices_used": [
-        44.9,
+        44.99,
         54.99,
-        52.9
+        51.9
       ],
-      "final_price": 42.9,
-      "final_price_display": "42,90 €",
+      "final_price": 43.9,
+      "final_price_display": "43,90 €",
       "final_source": "cardmarket",
-      "line_total": 128.7,
-      "line_total_display": "128,70 €"
+      "line_total": 131.7,
+      "line_total_display": "131,70 €"
     },
     {
       "name": "Prismatic Evolutions Glaceon Mini Tin",
       "url": "https://www.cardmarket.com/it/Pokemon/Products/Tins/Prismatic-Evolutions-Glaceon-Mini-Tin?language=5&minCondition=2",
       "quantity": 2,
-      "scanned_rows": 36,
-      "eligible_rows": 36,
+      "scanned_rows": 35,
+      "eligible_rows": 35,
       "excluded_banned": 0,
       "excluded_speculative": 0,
       "excluded_required": 0,
       "best_offer": {
         "price": 14.99,
+        "effective_price": 14.99,
         "price_display": "14,99 €",
-        "row_text": "120\nGennyDrake\nSealed - Sigillato\n14,99 €\n1",
-        "comment_text": "120 vendite | 527 articoli disponibili locazione dell'oggetto: italia italiano sealed - sigillato devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano sealed - sigillato devi aver effettuato il login per comprare articoli. italiano"
+        "row_text": "121\nGennyDrake\nSealed - Sigillato\n14,99 €\n1",
+        "comment_text": "121 vendite | 505 articoli disponibili locazione dell'oggetto: italia italiano sealed - sigillato devi aver effettuato il login per comprare articoli. locazione dell'oggetto: italia italiano sealed - sigillato devi aver effettuato il login per comprare articoli. italiano"
       },
       "note": null,
       "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Evoluzioni+Prismatiche+Mini+Tin+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
-      "ebay_avg_price": 19.263333333333332,
-      "ebay_avg_price_display": "19,26 €",
+      "ebay_avg_price": 18.099999999999998,
+      "ebay_avg_price_display": "18,10 €",
       "ebay_prices_used": [
-        19.99,
-        17.9,
-        19.9
+        16.9,
+        19.9,
+        17.5
       ],
       "final_price": 14.99,
       "final_price_display": "14,99 €",
@@ -455,74 +499,82 @@
     {
       "name": "Evolving Skies Booster Box",
       "quantity": 1,
-      "unit_price": 1799.0,
-      "price_display": "1.799,00 €",
-      "line_total": 1799.0,
-      "line_total_display": "1.799,00 €"
+      "unit_price": 1650.0,
+      "price_display": "1.650,00 €",
+      "line_total": 1650.0,
+      "line_total_display": "1.650,00 €"
     },
     {
       "name": "Giratina V (LOR 186) - PSA 9",
       "quantity": 1,
-      "unit_price": 800.0,
-      "price_display": "800,00 €",
-      "line_total": 800.0,
-      "line_total_display": "800,00 €"
+      "unit_price": 799.95,
+      "price_display": "799,95 €",
+      "line_total": 799.95,
+      "line_total_display": "799,95 €"
     },
     {
       "name": "Umbreon ex (sv8a 217) - PSA 10",
       "quantity": 1,
-      "unit_price": 590.0,
-      "price_display": "590,00 €",
-      "line_total": 590.0,
-      "line_total_display": "590,00 €"
+      "unit_price": 650.0,
+      "price_display": "650,00 €",
+      "line_total": 650.0,
+      "line_total_display": "650,00 €"
     },
     {
       "name": "Lugia V (SIT 186)",
       "quantity": 1,
-      "unit_price": 541.0,
-      "price_display": "541,00 €",
-      "line_total": 541.0,
-      "line_total_display": "541,00 €"
+      "unit_price": 526.0,
+      "price_display": "526,00 €",
+      "line_total": 526.0,
+      "line_total_display": "526,00 €"
+    },
+    {
+      "name": "Espeon V (EVS 180) - AI Grading 9",
+      "quantity": 1,
+      "unit_price": 180.0,
+      "price_display": "180,00 €",
+      "line_total": 180.0,
+      "line_total_display": "180,00 €"
     },
     {
       "name": "Phantasmal Flames Booster Box",
       "quantity": 1,
-      "unit_price": 199.0,
-      "price_display": "199,00 €",
-      "line_total": 199.0,
-      "line_total_display": "199,00 €"
+      "unit_price": 208.26333333333332,
+      "price_display": "208,26 €",
+      "line_total": 208.26333333333332,
+      "line_total_display": "208,26 €"
     },
     {
       "name": "Prismatic Evolutions Elite Trainer Box",
       "quantity": 1,
-      "unit_price": 85.0,
-      "price_display": "85,00 €",
-      "line_total": 85.0,
-      "line_total_display": "85,00 €"
+      "unit_price": 89.0,
+      "price_display": "89,00 €",
+      "line_total": 89.0,
+      "line_total_display": "89,00 €"
     },
     {
       "name": "Shrouded Fable Greninja ex Special Illustration Collection",
       "quantity": 1,
-      "unit_price": 75.0,
-      "price_display": "75,00 €",
-      "line_total": 75.0,
-      "line_total_display": "75,00 €"
+      "unit_price": 70.0,
+      "price_display": "70,00 €",
+      "line_total": 70.0,
+      "line_total_display": "70,00 €"
     },
     {
       "name": "Shrouded Fable Kingdra ex Special Illustration Collection",
       "quantity": 1,
-      "unit_price": 69.9,
-      "price_display": "69,90 €",
-      "line_total": 69.9,
-      "line_total_display": "69,90 €"
+      "unit_price": 70.0,
+      "price_display": "70,00 €",
+      "line_total": 70.0,
+      "line_total_display": "70,00 €"
     },
     {
       "name": "Ascended Heroes Elite Trainer Box",
       "quantity": 1,
-      "unit_price": 63.98,
-      "price_display": "63,98 €",
-      "line_total": 63.98,
-      "line_total_display": "63,98 €"
+      "unit_price": 68.0,
+      "price_display": "68,00 €",
+      "line_total": 68.0,
+      "line_total_display": "68,00 €"
     },
     {
       "name": "Journey Together Elite Trainer Box",
@@ -535,34 +587,34 @@
     {
       "name": "Gengar (LOR TG06)",
       "quantity": 1,
-      "unit_price": 24.9,
-      "price_display": "24,90 €",
-      "line_total": 24.9,
-      "line_total_display": "24,90 €"
+      "unit_price": 25.0,
+      "price_display": "25,00 €",
+      "line_total": 25.0,
+      "line_total_display": "25,00 €"
     },
     {
       "name": "Charizard (LOR TG03)",
       "quantity": 1,
-      "unit_price": 19.0,
-      "price_display": "19,00 €",
-      "line_total": 19.0,
-      "line_total_display": "19,00 €"
+      "unit_price": 25.0,
+      "price_display": "25,00 €",
+      "line_total": 25.0,
+      "line_total_display": "25,00 €"
     },
     {
       "name": "151 Booster Bundle",
       "quantity": 4,
-      "unit_price": 77.89,
-      "price_display": "77,89 €",
-      "line_total": 311.56,
-      "line_total_display": "311,56 €"
+      "unit_price": 83.0,
+      "price_display": "83,00 €",
+      "line_total": 332.0,
+      "line_total_display": "332,00 €"
     },
     {
       "name": "Prismatic Evolutions Booster Bundle",
       "quantity": 3,
-      "unit_price": 42.9,
-      "price_display": "42,90 €",
-      "line_total": 128.7,
-      "line_total_display": "128,70 €"
+      "unit_price": 43.9,
+      "price_display": "43,90 €",
+      "line_total": 131.7,
+      "line_total_display": "131,70 €"
     },
     {
       "name": "Prismatic Evolutions Glaceon Mini Tin",
@@ -573,8 +625,8 @@
       "line_total_display": "29,98 €"
     }
   ],
-  "sum_total": 4782.02,
-  "sum_total_display": "4.782,02 €",
-  "objects_examined_total_quantity": 21,
-  "objects_with_valid_price_total_quantity": 21
+  "sum_total": 4899.893333333333,
+  "sum_total_display": "4.899,89 €",
+  "objects_examined_total_quantity": 22,
+  "objects_with_valid_price_total_quantity": 22
 }
