@@ -26,6 +26,7 @@ from playwright.sync_api import sync_playwright
 
 # Importa le funzioni di scraping eBay da scraper.py
 from scraper import (
+    extract_card_number,
     format_euro,
     _formula_price,
     scrape_ebay_sold,
@@ -130,6 +131,7 @@ def main() -> None:
                     url=ebay_url,
                     cardmarket_price=cardmarket_price,
                     expected_language=item.get("ebay_language"),
+                    card_number=extract_card_number(item["url"]),
                 )
 
                 item["ebay_avg_price"] = ebay_avg

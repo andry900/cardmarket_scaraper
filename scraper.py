@@ -103,9 +103,11 @@ def compact_text(value: str) -> str:
 def has_keyword(text: str, keyword: str) -> bool:
     text_norm = normalize_text(text)
     kw_norm = normalize_text(keyword)
+    if " " not in kw_norm:
+        return re.search(rf"\b{re.escape(kw_norm)}\w*\b", text_norm) is not None
     if kw_norm in text_norm:
         return True
-    return kw_norm.replace(" ", "") in compact_text(text)
+    return compact_text(kw_norm) in compact_text(text)
 
 
 def keyword_is_negated(text: str, keyword: str) -> bool:
@@ -190,6 +192,20 @@ def _extract_ebay_query_hint_tokens(url: str) -> set[str]:
             continue
         hints.add(token)
     return hints
+
+
+def extract_card_number(product_url: str) -> str | None:
+    """Extract the CardMarket card number from a product slug such as EVS180."""
+    slug = urlparse(product_url).path.rsplit("/", maxsplit=1)[-1]
+    matches = re.findall(r"[a-zA-Z]{2,}(\d{1,4})\b", slug)
+    return matches[-1] if matches else None
+
+
+def ebay_item_matches_card_number(item_text: str, card_number: str | None) -> bool:
+    """Return True when no card number is required or the listing contains it."""
+    if not card_number:
+        return True
+    return re.search(rf"(?<!\d){re.escape(card_number)}(?!\d)", item_text) is not None
 
 
 def infer_ebay_expected_language(url: str, configured_language: str | None = None) -> str:
@@ -644,6 +660,7 @@ def scrape_ebay_sold(
     url: str,
     cardmarket_price: float,
     expected_language: str | None = None,
+    card_number: str | None = None,
     banned_words: list[str] | None = None,
     max_items: int = 3,
     timeout_ms: int = 120000,
@@ -656,7 +673,7 @@ def scrape_ebay_sold(
     filter and returns ``(average_price, prices_used)``.
 
     Items are accepted only inside this range around *cardmarket_price*:
-    - not below 20 % (>= 80 % of CardMarket)
+    - not below 25 % (>= 75 % of CardMarket)
     - not above 40 % (<= 140 % of CardMarket)
     """
     resolved_language = infer_ebay_expected_language(url, expected_language)
@@ -668,11 +685,12 @@ def scrape_ebay_sold(
         count = items.count()
         print(f"[EBAY] Trovati {count} elementi nella pagina.")
 
-        min_acceptable = cardmarket_price * 0.80
+        min_acceptable = cardmarket_price * 0.75
         max_acceptable = cardmarket_price * 1.40
 
         prices: list[float] = []
         excluded_language = 0
+        excluded_card_number = 0
         for i in range(count):
             if len(prices) >= max_items:
                 break
@@ -686,6 +704,9 @@ def scrape_ebay_sold(
                 query_hint_tokens=hint_tokens,
             ):
                 excluded_language += 1
+                continue
+            if not ebay_item_matches_card_number(item_text, card_number):
+                excluded_card_number += 1
                 continue
             item_text_norm = normalize_text(item_text)
             if any(
@@ -706,6 +727,8 @@ def scrape_ebay_sold(
 
         if excluded_language:
             print(f"[EBAY] Esclusi {excluded_language} annunci per mismatch lingua ({resolved_language}).")
+        if excluded_card_number:
+            print(f"[EBAY] Esclusi {excluded_card_number} annunci senza numero carta {card_number}.")
 
         if not prices:
             return None, []
@@ -1066,6 +1089,7 @@ def main() -> None:
                         url=ebay_url_product,
                         cardmarket_price=result.best_offer.effective_price or result.best_offer.price,
                         expected_language=ebay_language_product,
+                        card_number=extract_card_number(url),
                         banned_words=args.banned,
                     )
                     result.ebay_url = ebay_url_product
@@ -1079,11 +1103,11 @@ def main() -> None:
                         if ebay_avg < effective_price:
                             result.final_price = ebay_avg
                             result.final_source = "ebay"
-                            print(f"[EBAY] eBay ({format_euro(ebay_avg)}) < CardMarket ({result.best_offer.price_display}) -> uso eBay")
+                            print(f"[EBAY] eBay ({format_euro(ebay_avg)}) < CardMarket ({format_euro(effective_price)}) -> uso eBay")
                         else:
                             result.final_price = effective_price
                             result.final_source = "cardmarket"
-                            print(f"[EBAY] eBay ({format_euro(ebay_avg)}) >= CardMarket ({result.best_offer.price_display}) -> uso CardMarket")
+                            print(f"[EBAY] eBay ({format_euro(ebay_avg)}) >= CardMarket ({format_euro(effective_price)}) -> uso CardMarket")
                     else:
                         result.final_price = effective_price
                         result.final_source = "cardmarket"
