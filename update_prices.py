@@ -29,6 +29,8 @@ from scraper import (
     extract_card_number,
     format_euro,
     _formula_price,
+    category_display,
+    product_category,
     scrape_ebay_sold,
 )
 
@@ -169,8 +171,10 @@ def main() -> None:
         item["line_total"] = line_total
         item["line_total_display"] = format_euro(line_total)
 
+        category = item.get("category") or product_category(item["url"])
         values_list.append({
             "name": item["name"],
+            "category": category,
             "quantity": quantity,
             "unit_price": final_price,
             "price_display": format_euro(final_price),
@@ -181,22 +185,46 @@ def main() -> None:
         print(f"[FINALE] {item['name']}: {format_euro(final_price)} [{final_source}] x {quantity} = {format_euro(line_total)}")
 
     sum_total = round(sum(v["line_total"] for v in values_list), 2)
+
+    # Raggruppa i valori per categoria mantenendo l'ordine di prima apparizione.
+    grouped: dict[str, list[dict]] = {}
+    for v in values_list:
+        grouped.setdefault(v["category"], []).append(v)
+
+    def _formula(values: list[dict]) -> str:
+        terms = []
+        for v in values:
+            p = _formula_price(v["unit_price"])
+            terms.append(f"{p}*{v['quantity']}" if v["quantity"] > 1 else p)
+        return f"={'+'.join(terms)}" if terms else ""
+
+    categories_output = []
+    for category, values in grouped.items():
+        cat_sum = round(sum(v["line_total"] for v in values), 2)
+        categories_output.append({
+            "category": category,
+            "category_display": category_display(category),
+            "values": values,
+            "sum_total": cat_sum,
+            "sum_total_display": format_euro(cat_sum),
+            "google_sheet_formula": _formula(values),
+        })
+
     data["values"] = values_list
+    data["categories"] = categories_output
     data["sum_total"] = sum_total
     data["sum_total_display"] = format_euro(sum_total)
 
     save_json(results_path, data)
 
-    print("\n=== ELENCO VALORI ===")
-    for idx, v in enumerate(values_list, start=1):
-        print(f"{idx}. {v['name']}: {v['price_display']} x {v['quantity']} = {v['line_total_display']}")
-    print(f"Somma totale: {format_euro(sum_total)}")
-
-    formula_terms = []
-    for v in values_list:
-        p = _formula_price(v["unit_price"])
-        formula_terms.append(f"{p}*{v['quantity']}" if v["quantity"] > 1 else p)
-    print(f"Formula Google Sheet: ={'+'  .join(formula_terms)}")
+    for category, values in grouped.items():
+        label = category_display(category)
+        cat_sum = round(sum(v["line_total"] for v in values), 2)
+        print(f"\n=== ELENCO VALORI - {label.upper()} ===")
+        for idx, v in enumerate(values, start=1):
+            print(f"{idx}. {v['name']}: {v['price_display']} x {v['quantity']} = {v['line_total_display']}")
+        print(f"Somma totale: {format_euro(cat_sum)}")
+        print(f"Formula Google Sheet: {_formula(values)}")
 
     print(f"\n[OK] {results_path} aggiornato. Totale: {format_euro(sum_total)}")
 

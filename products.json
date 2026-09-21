@@ -132,5 +132,19 @@
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Evoluzioni+Prismatiche+Mini+Tin+ita&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
     "ebay_language": "it",
     "quantity": 2
+  },
+  {
+    "name": "Carrying on his Will Booster Box",
+    "url": "https://www.cardmarket.com/it/OnePiece/Products/Booster-Boxes/Carrying-on-his-Will-Booster-Box?language=1",
+    "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=One+Piece+Carrying+on+his+Will+Booster+Box&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "en",
+    "quantity": 1
+  },
+  {
+    "name": "The World's Strongest Warriors Booster Box",
+    "url": "https://www.cardmarket.com/it/OnePiece/Products/Booster-Boxes/The-Worlds-Strongest-Warriors-Booster-Box?language=1",
+    "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=One+Piece+Worlds+Strongest+Warriors+Booster+Box&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
+    "ebay_language": "en",
+    "quantity": 1
   }
 ]

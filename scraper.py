@@ -201,6 +201,23 @@ def extract_card_number(product_url: str) -> str | None:
     return matches[-1] if matches else None
 
 
+# Human-readable labels for the game categories inferred from CardMarket URLs.
+CATEGORY_LABELS = {"Pokemon": "Pokémon", "OnePiece": "One Piece"}
+
+
+def product_category(url: str) -> str:
+    """Infer the game category (e.g. Pokemon, OnePiece) from a CardMarket URL."""
+    parts = [p for p in urlparse(url).path.split("/") if p]
+    # CardMarket paths look like /it/Pokemon/Products/... -> category is the 2nd segment.
+    if len(parts) >= 2:
+        return parts[1]
+    return "Altro"
+
+
+def category_display(category: str) -> str:
+    return CATEGORY_LABELS.get(category, category)
+
+
 def ebay_item_matches_card_number(item_text: str, card_number: str | None) -> bool:
     """Return True when no card number is required or the listing contains it."""
     if not card_number:
@@ -1133,15 +1150,18 @@ def main() -> None:
             browser.close()
 
     payload: list[dict[str, Any]] = []
-    values_list: list[tuple[str, int, float, float, str]] = []
+    # Values grouped by game category, preserving first-seen order.
+    grouped_values: dict[str, list[tuple[str, int, float, float, str]]] = {}
 
     for result in results:
         print(f"\n=== {result.name} ===")
         print(f"URL: {result.url}")
         print(f"Quantita: {result.quantity}")
 
+        category = product_category(result.url)
         row_data: dict[str, Any] = {
             "name": result.name,
+            "category": category,
             "url": result.url,
             "quantity": result.quantity,
             "scanned_rows": result.scanned_rows,
@@ -1170,7 +1190,7 @@ def main() -> None:
             print(f"Estratto offerta: {result.best_offer.row_text[:220]}")
             if result.best_offer.comment_text:
                 print(f"Commento rilevato: {result.best_offer.comment_text[:220]}")
-            values_list.append(
+            grouped_values.setdefault(category, []).append(
                 (result.name, result.quantity, final_price, line_total, format_euro(final_price))
             )
             row_data["best_offer"] = {
@@ -1193,29 +1213,13 @@ def main() -> None:
 
         payload.append(row_data)
 
-    total_sum = sum(item[3] for item in values_list)
     total_examined_objects = sum(result.quantity for result in results)
     total_with_valid_price = sum(result.quantity for result in results if result.best_offer is not None)
+    flat_values = [v for values in grouped_values.values() for v in values]
+    total_sum = sum(item[3] for item in flat_values)
 
-    print("\n=== ELENCO VALORI ===")
-    if not values_list:
-        print("Nessun valore valido disponibile.")
-    else:
-        for idx, (name, quantity, _unit_price, line_total, price_display) in enumerate(values_list, start=1):
-            print(f"{idx}. {name}: {price_display} x {quantity} = {format_euro(line_total)}")
-        print(f"Somma totale: {format_euro(total_sum)}")
-        formula_terms = []
-        for _name, quantity, unit_price, _line_total, _price_display in values_list:
-            p = _formula_price(unit_price)
-            formula_terms.append(f"{p}*{quantity}" if quantity > 1 else p)
-        print(f"Formula Google Sheet: ={'+'  .join(formula_terms)}")
-
-    print(f"Numero oggetti esaminati (con quantita): {total_examined_objects}")
-    print(f"Numero oggetti con prezzo valido: {total_with_valid_price}")
-
-    output_data: dict[str, Any] = {
-        "results": payload,
-        "values": [
+    def _format_values(values: list[tuple[str, int, float, float, str]]) -> list[dict[str, Any]]:
+        return [
             {
                 "name": name,
                 "quantity": quantity,
@@ -1224,8 +1228,48 @@ def main() -> None:
                 "line_total": line_total,
                 "line_total_display": format_euro(line_total),
             }
-            for name, quantity, unit_price, line_total, price_display in values_list
-        ],
+            for name, quantity, unit_price, line_total, price_display in values
+        ]
+
+    def _google_sheet_formula(values: list[tuple[str, int, float, float, str]]) -> str:
+        terms: list[str] = []
+        for _name, quantity, unit_price, _line_total, _price_display in values:
+            p = _formula_price(unit_price)
+            terms.append(f"{p}*{quantity}" if quantity > 1 else p)
+        return f"={'+'.join(terms)}" if terms else ""
+
+    categories_output: list[dict[str, Any]] = []
+    if not flat_values:
+        print("\n=== ELENCO VALORI ===")
+        print("Nessun valore valido disponibile.")
+    else:
+        for category, values in grouped_values.items():
+            label = category_display(category)
+            cat_sum = sum(item[3] for item in values)
+            formula = _google_sheet_formula(values)
+            print(f"\n=== ELENCO VALORI - {label.upper()} ===")
+            for idx, (name, quantity, _unit_price, line_total, price_display) in enumerate(values, start=1):
+                print(f"{idx}. {name}: {price_display} x {quantity} = {format_euro(line_total)}")
+            print(f"Somma totale: {format_euro(cat_sum)}")
+            print(f"Formula Google Sheet: {formula}")
+            categories_output.append(
+                {
+                    "category": category,
+                    "category_display": label,
+                    "values": _format_values(values),
+                    "sum_total": cat_sum,
+                    "sum_total_display": format_euro(cat_sum),
+                    "google_sheet_formula": formula,
+                }
+            )
+
+    print(f"Numero oggetti esaminati (con quantita): {total_examined_objects}")
+    print(f"Numero oggetti con prezzo valido: {total_with_valid_price}")
+
+    output_data: dict[str, Any] = {
+        "results": payload,
+        "categories": categories_output,
+        "values": _format_values(flat_values),
         "sum_total": total_sum,
         "sum_total_display": format_euro(total_sum),
         "objects_examined_total_quantity": total_examined_objects,
