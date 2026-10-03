@@ -333,13 +333,32 @@ def scrape_product(
             or "cloudflare" in body and "verifica" in body
         )
 
-    def wait_until_challenge_cleared(timeout_seconds: int) -> bool:
+    def safe_is_challenge() -> bool:
+        # During a reload the execution context is torn down, so title()/
+        # inner_text()/content() can raise transiently. Treat that as
+        # "still navigating" rather than letting it bubble up.
+        try:
+            return is_challenge(page)
+        except Exception:
+            return True
+
+    def wait_until_challenge_cleared(timeout_seconds: int, reload_every: float = 8.0) -> bool:
         deadline = time.time() + max(1, timeout_seconds)
+        last_reload = time.time()
         while time.time() < deadline:
-            if not is_challenge(page):
+            if not safe_is_challenge():
                 return True
+            # The cf_clearance cookie set by solving the challenge only takes
+            # effect on a fresh navigation, so periodically reload the page
+            # instead of just polling the stale (still-challenged) one.
+            if time.time() - last_reload >= reload_every:
+                try:
+                    page.reload(wait_until="domcontentloaded", timeout=120000)
+                except Exception:
+                    pass
+                last_reload = time.time()
             page.wait_for_timeout(1500)
-        return not is_challenge(page)
+        return not safe_is_challenge()
 
     for attempt in range(1, max_retries + 1):
         page.goto(url, wait_until="domcontentloaded", timeout=120000)
@@ -352,6 +371,12 @@ def scrape_product(
             print(f"[INFO] Challenge Cloudflare (tentativo {attempt}/{max_retries}) per: {name}")
             print("[INFO] Risolvi il challenge nel browser aperto, poi premi INVIO qui.")
             input()
+            # Reproduce what a fresh script restart does: reload the page so the
+            # cf_clearance cookie obtained by solving the challenge is applied.
+            try:
+                page.reload(wait_until="domcontentloaded", timeout=120000)
+            except Exception:
+                pass
             print(
                 f"[INFO] Verifico risoluzione challenge (attendo fino a {manual_challenge_timeout_seconds}s)..."
             )
