@@ -369,20 +369,17 @@ def scrape_product(
 
         if manual_challenge:
             print(f"[INFO] Challenge Cloudflare (tentativo {attempt}/{max_retries}) per: {name}")
-            print("[INFO] Risolvi il challenge nel browser aperto, poi premi INVIO qui.")
-            input()
-            # Reproduce what a fresh script restart does: reload the page so the
-            # cf_clearance cookie obtained by solving the challenge is applied.
-            try:
-                page.reload(wait_until="domcontentloaded", timeout=120000)
-            except Exception:
-                pass
             print(
-                f"[INFO] Verifico risoluzione challenge (attendo fino a {manual_challenge_timeout_seconds}s)..."
+                f"[INFO] Risolvi il challenge nel browser aperto. "
+                f"Faccio il refresh automatico della pagina fino a {manual_challenge_timeout_seconds}s..."
             )
+            # No manual INVIO: periodically reload the page ourselves so the
+            # cf_clearance cookie obtained by solving the challenge is applied
+            # as soon as it is available.
             if wait_until_challenge_cleared(manual_challenge_timeout_seconds):
+                print("[INFO] Challenge risolta, proseguo.")
                 break
-            print("[WARN] Challenge ancora attiva dopo il timeout manuale.")
+            print("[WARN] Challenge ancora attiva dopo il timeout.")
         else:
             wait_sec = 15 * attempt
             print(f"[INFO] Challenge rilevata per: {name} (tentativo {attempt}/{max_retries}), riprovo tra {wait_sec}s...")
@@ -828,6 +825,51 @@ def load_existing_results(output_path: Path) -> dict[str, dict[str, Any]]:
         return {}
 
 
+def run_login(page: Any, args: argparse.Namespace) -> bool:
+    """Open Cardmarket and wait (auto-detecting) until the user has logged in.
+
+    Relies on the browser profile being persistent (persistent-chrome or a
+    connect-cdp Brave launched with a fixed --user-data-dir): once logged in,
+    the session cookies live in that profile and survive future runs, so this
+    only needs to be done once.
+    """
+    def is_logged_in() -> bool:
+        # When authenticated Cardmarket exposes a logout link in the account
+        # menu; when anonymous it only offers a login link. Checking for the
+        # logout link is the most stable signal across page layouts.
+        try:
+            return page.locator('a[href*="Logout"]').count() > 0
+        except Exception:
+            return False
+
+    print(f"[INFO] Apro {args.login_url} per il login...")
+    try:
+        page.goto(args.login_url, wait_until="domcontentloaded", timeout=120000)
+    except Exception as exc:
+        print(f"[WARN] Errore caricando la pagina di login: {exc}")
+
+    if is_logged_in():
+        print("[INFO] Risulti gia loggato. Sessione salvata nel profilo.")
+        return True
+
+    print(
+        "[INFO] Fai il login nel browser aperto (metti la spunta 'Resta connesso' se c'e). "
+        f"Rilevo l'accesso automaticamente, attendo fino a {args.login_timeout_seconds}s..."
+    )
+    deadline = time.time() + max(1, args.login_timeout_seconds)
+    while time.time() < deadline:
+        if is_logged_in():
+            print("[INFO] Login rilevato. Sessione salvata nel profilo del browser.")
+            print("[INFO] Nei prossimi run resterai loggato: non serve rifare --login.")
+            # Give the browser a moment to flush cookies to the profile on disk.
+            page.wait_for_timeout(2000)
+            return True
+        page.wait_for_timeout(2000)
+
+    print("[WARN] Login non rilevato entro il timeout. Riprova con --login.")
+    return False
+
+
 def create_browser_context(p: Any, args: argparse.Namespace) -> tuple[Any, Any, bool]:
     """Create a Playwright context using the requested browser strategy.
 
@@ -914,9 +956,29 @@ def main() -> None:
         help="Esegue il browser in headless. Se Cloudflare blocca, usa senza questo flag.",
     )
     parser.add_argument(
+        "--login",
+        action="store_true",
+        help=(
+            "Apre Cardmarket nel browser col profilo persistente e attende che tu faccia il login "
+            "(rilevato automaticamente), poi esce salvando la sessione. Fallo una volta sola; "
+            "nei run successivi resti loggato."
+        ),
+    )
+    parser.add_argument(
+        "--login-url",
+        default="https://www.cardmarket.com/it/Pokemon",
+        help="Pagina su cui fare il login quando usi --login.",
+    )
+    parser.add_argument(
+        "--login-timeout-seconds",
+        type=int,
+        default=300,
+        help="Tempo massimo di attesa del login con --login (default: 300s).",
+    )
+    parser.add_argument(
         "--manual-challenge",
         action="store_true",
-        help="Se compare challenge Cloudflare, attende la risoluzione manuale nel browser invece di ritentare automaticamente.",
+        help="Se compare challenge Cloudflare, attende la risoluzione nel browser aperto facendo il refresh automatico della pagina invece di ritentare dall'inizio.",
     )
     parser.add_argument(
         "--max-retries",
@@ -928,7 +990,7 @@ def main() -> None:
         "--manual-challenge-timeout-seconds",
         type=int,
         default=180,
-        help="Timeout attesa risoluzione challenge manuale dopo INVIO (default: 180s).",
+        help="Timeout attesa risoluzione challenge con refresh automatico (default: 180s).",
     )
     parser.add_argument(
         "--output-json",
@@ -1020,6 +1082,12 @@ def main() -> None:
 
         # Reduce basic automation fingerprint in JS-exposed fields.
         page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined});")
+
+        if args.login:
+            run_login(page, args)
+            if not context_is_browser:
+                context.close()
+            return
 
         for idx, product in enumerate(products):
             name = str(product.get("name") or product.get("url"))
