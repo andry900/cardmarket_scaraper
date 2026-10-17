@@ -47,11 +47,13 @@
       "ai grading 9",
       "graad 9",
       "ai grading 9.5",
-      "graad 9.5"
+      "graad 9.5",
+      "psa 9"
     ],
     "discount_any": [
       "ai grading 9.5",
-      "graad 9.5"
+      "graad 9.5",
+      "psa 9"
     ],
     "discount_percent": 20,
     "quantity": 1
