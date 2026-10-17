@@ -2,3 +2,4 @@
 .browser_profile/
 __pycache__/
 *.pyc
+.cm-session.json

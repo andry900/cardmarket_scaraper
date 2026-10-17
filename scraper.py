@@ -849,7 +849,8 @@ def run_login(page: Any, args: argparse.Namespace) -> bool:
         print(f"[WARN] Errore caricando la pagina di login: {exc}")
 
     if is_logged_in():
-        print("[INFO] Risulti gia loggato. Sessione salvata nel profilo.")
+        print("[INFO] Risulti gia loggato. Salvo la sessione.")
+        save_session(page.context, args.session_file)
         return True
 
     print(
@@ -859,15 +860,60 @@ def run_login(page: Any, args: argparse.Namespace) -> bool:
     deadline = time.time() + max(1, args.login_timeout_seconds)
     while time.time() < deadline:
         if is_logged_in():
-            print("[INFO] Login rilevato. Sessione salvata nel profilo del browser.")
-            print("[INFO] Nei prossimi run resterai loggato: non serve rifare --login.")
-            # Give the browser a moment to flush cookies to the profile on disk.
+            print("[INFO] Login rilevato. Salvo la sessione.")
+            # Give the browser a moment to flush cookies before we read them.
             page.wait_for_timeout(2000)
+            save_session(page.context, args.session_file)
+            print("[INFO] Nei prossimi run resterai loggato: non serve rifare --login.")
             return True
         page.wait_for_timeout(2000)
 
     print("[WARN] Login non rilevato entro il timeout. Riprova con --login.")
     return False
+
+
+def save_session(context: Any, session_file: str) -> None:
+    """Persist the Cardmarket cookies to a JSON file so the login survives even
+    when the browser (and its in-memory session cookies) is closed."""
+    path = (session_file or "").strip()
+    if not path:
+        return
+    try:
+        cookies = [c for c in context.cookies() if "cardmarket" in str(c.get("domain", ""))]
+    except Exception as exc:
+        print(f"[WARN] Impossibile leggere i cookie per salvare la sessione: {exc}")
+        return
+    if not cookies:
+        print("[WARN] Nessun cookie Cardmarket da salvare nella sessione.")
+        return
+    try:
+        Path(path).write_text(json.dumps(cookies, indent=2), encoding="utf-8")
+        print(f"[INFO] Sessione salvata in {path} ({len(cookies)} cookie). "
+              "Nei prossimi run verra ripristinata automaticamente.")
+    except OSError as exc:
+        print(f"[WARN] Impossibile scrivere il file sessione {path}: {exc}")
+
+
+def load_session(context: Any, session_file: str) -> bool:
+    """Restore previously saved Cardmarket cookies into the context. Returns True
+    if cookies were injected."""
+    path = (session_file or "").strip()
+    if not path or not Path(path).exists():
+        return False
+    try:
+        cookies = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"[WARN] Impossibile leggere il file sessione {path}: {exc}")
+        return False
+    if not cookies:
+        return False
+    try:
+        context.add_cookies(cookies)
+    except Exception as exc:
+        print(f"[WARN] Impossibile ripristinare i cookie della sessione: {exc}")
+        return False
+    print(f"[INFO] Sessione ripristinata da {path} ({len(cookies)} cookie).")
+    return True
 
 
 def create_browser_context(p: Any, args: argparse.Namespace) -> tuple[Any, Any, bool]:
@@ -976,6 +1022,16 @@ def main() -> None:
         help="Tempo massimo di attesa del login con --login (default: 300s).",
     )
     parser.add_argument(
+        "--session-file",
+        default=None,
+        help=(
+            "File dove salvare/ripristinare i cookie di sessione Cardmarket. "
+            "Permette di restare loggati anche chiudendo il browser "
+            "(default: .cm-session.json nella cartella dello script). "
+            "Usa stringa vuota per disabilitare."
+        ),
+    )
+    parser.add_argument(
         "--manual-challenge",
         action="store_true",
         help="Se compare challenge Cloudflare, attende la risoluzione nel browser aperto facendo il refresh automatico della pagina invece di ritentare dall'inizio.",
@@ -1052,6 +1108,11 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+    # Anchor the default session file to the script directory so the saved login
+    # is found no matter which directory the scraper is launched from. An empty
+    # string explicitly disables the session cache.
+    if args.session_file is None:
+        args.session_file = str(Path(__file__).resolve().parent / ".cm-session.json")
     products = load_products(Path(args.config))
     if args.limit > 0:
         products = products[:args.limit]
@@ -1082,6 +1143,10 @@ def main() -> None:
 
         # Reduce basic automation fingerprint in JS-exposed fields.
         page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined});")
+
+        # Restore the saved Cardmarket session so we stay logged in even if the
+        # browser was fully closed between runs (session cookies are lost on close).
+        load_session(context, args.session_file)
 
         if args.login:
             run_login(page, args)
@@ -1237,6 +1302,11 @@ def main() -> None:
                 print(f"[PREZZO] {result.name}: {format_euro(final_price)}{source_label} x {result.quantity} = {format_euro(line_total)}")
             else:
                 print(f"[PREZZO] {result.name}: nessun prezzo valido trovato")
+
+        # Refresh the saved session with the latest cookies (cf_clearance and the
+        # login token rotate) so the next run keeps working.
+        if source in ("all", "cardmarket"):
+            save_session(context, args.session_file)
 
         context.close()
         if not context_is_browser:
