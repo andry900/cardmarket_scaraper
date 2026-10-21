@@ -72,8 +72,11 @@ _EBAY_EN_SET_MARKERS = [
 # Literal (machine) translations of English set names into Italian that are NOT the
 # official Italian set name. A genuine Italian listing uses the official name (e.g.
 # "Evoluzioni Eteree"), so these fakes signal an auto-translated English listing.
+# Matched as single distinctive words so any word order is caught
+# ("cieli in evoluzione", "evoluzione cieli", ...).
 _EBAY_TRANSLATED_SET_MARKERS = [
-    " cieli in evoluzione ",  # Evolving Skies (official IT: Evoluzioni Eteree)
+    " cieli ",  # "skies" from Evolving Skies (official IT: Evoluzioni Eteree, never "cieli")
+    " cielo ",  # singular variant of a sloppy translation ("cielo in evoluzione")
 ]
 _GENERIC_QUERY_TOKENS = {
     "pokemon", "booster", "box", "bundle", "mini", "tin", "collection", "elite", "trainer", "etb",
