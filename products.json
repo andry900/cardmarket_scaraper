@@ -77,8 +77,9 @@
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Box-Sets/Shrouded-Fable-Greninja-ex-Special-Illustration-Collection?language=5&minCondition=2",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Segreto+Fiabesco+collezione+Greninja+ex&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
     "ebay_language": "it",
-    "ebay_required_any": [
-      "greninja"
+    "ebay_required_all": [
+      "greninja",
+      "collezione"
     ],
     "quantity": 1
   },
@@ -87,8 +88,9 @@
     "url": "https://www.cardmarket.com/it/Pokemon/Products/Box-Sets/Shrouded-Fable-Kingdra-ex-Special-Illustration-Collection?language=5&minCondition=2",
     "ebay_url": "https://www.ebay.it/sch/i.html?_nkw=Pokemon+Segreto+Fiabesco+collezione+Kingdra+ex&_sacat=0&_from=R40&LH_PrefLoc=1&rt=nc&LH_Sold=1",
     "ebay_language": "it",
-    "ebay_required_any": [
-      "kingdra"
+    "ebay_required_all": [
+      "kingdra",
+      "collezione"
     ],
     "quantity": 1
   },

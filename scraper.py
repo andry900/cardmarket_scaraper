@@ -69,6 +69,12 @@ _EBAY_EN_SET_MARKERS = [
     " temporal forces ", " twilight masquerade ", " shrouded fable ", " stellar crown ",
     " surging sparks ", " prismatic evolutions ", " journey together ", " destined rivals ",
 ]
+# Literal (machine) translations of English set names into Italian that are NOT the
+# official Italian set name. A genuine Italian listing uses the official name (e.g.
+# "Evoluzioni Eteree"), so these fakes signal an auto-translated English listing.
+_EBAY_TRANSLATED_SET_MARKERS = [
+    " cieli in evoluzione ",  # Evolving Skies (official IT: Evoluzioni Eteree)
+]
 _GENERIC_QUERY_TOKENS = {
     "pokemon", "booster", "box", "bundle", "mini", "tin", "collection", "elite", "trainer", "etb",
     "special", "illustration", "card", "cards", "set", "single", "singles", "psa", "bgs", "cgc",
@@ -104,7 +110,7 @@ class ProductResult:
     required_any: list[str] | None = None
     discount_any: list[str] | None = None
     discount_percent: float = 0.0
-    ebay_required_any: list[str] | None = None
+    ebay_required_all: list[str] | None = None
     final_price: float | None = None
     final_source: str | None = None
 
@@ -317,7 +323,11 @@ def ebay_item_matches_language(
     text_spaced = f" {text} "
     has_it = _contains_any_marker(text, _EBAY_IT_MARKERS)
     has_jp = _contains_any_marker(text, _EBAY_JP_MARKERS)
-    has_en = _contains_any_marker(text, _EBAY_EN_MARKERS) or _contains_any_marker(text, _EBAY_EN_SET_MARKERS)
+    has_en = (
+        _contains_any_marker(text, _EBAY_EN_MARKERS)
+        or _contains_any_marker(text, _EBAY_EN_SET_MARKERS)
+        or _contains_any_marker(text, _EBAY_TRANSLATED_SET_MARKERS)
+    )
 
     has_hint_token = any(token in text_spaced for token in query_hint_tokens)
 
@@ -815,7 +825,7 @@ def scrape_ebay_sold(
     expected_language: str | None = None,
     card_number: str | None = None,
     required_any: list[str] | None = None,
-    ebay_required_any: list[str] | None = None,
+    ebay_required_all: list[str] | None = None,
     discount_any: list[str] | None = None,
     discount_percent: float = 0.0,
     banned_words: list[str] | None = None,
@@ -842,16 +852,17 @@ def scrape_ebay_sold(
     value is used for the range check and the average, while the real sold price
     is still reported for verification.
 
-    When ``ebay_required_any`` is set, only listings whose text contains at least
-    one of those tokens are kept. Use it to disambiguate near-identical sibling
-    products (e.g. keep only "kingdra" for the Kingdra collection, so the
-    Greninja one that eBay's fuzzy search returns is dropped).
+    When ``ebay_required_all`` is set, only listings whose text contains *every*
+    one of those tokens are kept. Use it to pin down the exact product when
+    eBay's fuzzy search returns siblings or the wrong form, e.g.
+    ``["kingdra", "collezione"]`` keeps only the Kingdra *collection* and drops
+    both the Greninja collection and single Kingdra promo cards.
     """
     resolved_language = infer_ebay_expected_language(url, expected_language)
     hint_tokens = _extract_ebay_query_hint_tokens(url)
     normalized_banned = [normalize_text(w) for w in (banned_words if banned_words is not None else DEFAULT_BANNED)]
     normalized_discount = [normalize_text(x) for x in (discount_any or [])]
-    normalized_required_tokens = [normalize_text(x) for x in (ebay_required_any or [])]
+    normalized_required_tokens = [normalize_text(x) for x in (ebay_required_all or [])]
     wants_grade = requirement_wants_grade(required_any or [], name)
 
     def collect_prices(active_page: Any) -> tuple[float | None, list[dict[str, Any]]]:
@@ -888,7 +899,7 @@ def scrape_ebay_sold(
                 excluded_grade += 1
                 continue
             item_text_norm = normalize_text(item_text)
-            if normalized_required_tokens and not any(
+            if normalized_required_tokens and not all(
                 has_keyword(item_text_norm, tok) for tok in normalized_required_tokens
             ):
                 excluded_required_token += 1
@@ -924,7 +935,7 @@ def scrape_ebay_sold(
         if excluded_grade:
             print(f"[EBAY] Esclusi {excluded_grade} annunci non gradati.")
         if excluded_required_token:
-            print(f"[EBAY] Esclusi {excluded_required_token} annunci senza i termini richiesti {ebay_required_any}.")
+            print(f"[EBAY] Esclusi {excluded_required_token} annunci senza tutti i termini richiesti {ebay_required_all}.")
 
         if not objects:
             return None, []
@@ -1317,7 +1328,7 @@ def main() -> None:
             required_any = [str(x) for x in product.get("required_any", [])]
             discount_any = [str(x) for x in product.get("discount_any", [])]
             discount_percent = float(product.get("discount_percent", 0))
-            ebay_required_any = [str(x) for x in product.get("ebay_required_any", [])]
+            ebay_required_all = [str(x) for x in product.get("ebay_required_all", [])]
             quantity = max(1, int(product.get("quantity", 1)))
             ebay_url_product = str(product.get("ebay_url", "")).strip()
             ebay_language_product = str(product.get("ebay_language", "")).strip() or None
@@ -1403,7 +1414,7 @@ def main() -> None:
             result.required_any = required_any
             result.discount_any = discount_any
             result.discount_percent = discount_percent
-            result.ebay_required_any = ebay_required_any
+            result.ebay_required_all = ebay_required_all
             results.append(result)
 
             # ── eBay sold comparison ───────────────────────────────────────────
@@ -1430,7 +1441,7 @@ def main() -> None:
                         required_any=required_any,
                         discount_any=discount_any,
                         discount_percent=discount_percent,
-                        ebay_required_any=ebay_required_any,
+                        ebay_required_all=ebay_required_all,
                         banned_words=args.banned,
                     )
                     result.ebay_url = ebay_url_product
@@ -1509,8 +1520,8 @@ def main() -> None:
         if result.discount_any:
             row_data["discount_any"] = result.discount_any
             row_data["discount_percent"] = result.discount_percent
-        if result.ebay_required_any:
-            row_data["ebay_required_any"] = result.ebay_required_any
+        if result.ebay_required_all:
+            row_data["ebay_required_all"] = result.ebay_required_all
 
         if result.best_offer is None:
             print("Nessuna offerta valida trovata con i filtri richiesti.")
