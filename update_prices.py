@@ -127,7 +127,7 @@ def main() -> None:
 
                 cardmarket_price = best_offer.get("effective_price", best_offer["price"])
                 print(f"[EBAY] Scraping: {name} (soglia CM: {format_euro(cardmarket_price)})")
-                ebay_avg, ebay_prices = scrape_ebay_sold(
+                ebay_avg, ebay_objects = scrape_ebay_sold(
                     page,
                     name=name,
                     url=ebay_url,
@@ -138,10 +138,11 @@ def main() -> None:
 
                 item["ebay_avg_price"] = ebay_avg
                 item["ebay_avg_price_display"] = format_euro(ebay_avg) if ebay_avg is not None else None
-                item["ebay_prices_used"] = ebay_prices
+                item["ebay_objects_used"] = ebay_objects
+                item.pop("ebay_prices_used", None)
 
                 if ebay_avg is not None:
-                    prices_str = ", ".join(format_euro(p) for p in ebay_prices)
+                    prices_str = ", ".join(format_euro(o["price"]) for o in ebay_objects)
                     print(f"[EBAY] Prezzi: [{prices_str}] → media {format_euro(ebay_avg)}")
 
             context.close()
@@ -204,16 +205,15 @@ def main() -> None:
         categories_output.append({
             "category": category,
             "category_display": category_display(category),
-            "values": values,
             "sum_total": cat_sum,
             "sum_total_display": format_euro(cat_sum),
             "google_sheet_formula": _formula(values),
         })
 
-    data["values"] = values_list
     data["categories"] = categories_output
     data["sum_total"] = sum_total
     data["sum_total_display"] = format_euro(sum_total)
+    data.pop("values", None)
 
     save_json(results_path, data)
 

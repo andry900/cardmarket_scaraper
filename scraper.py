@@ -85,7 +85,7 @@ class ProductResult:
     note: str | None = None
     ebay_url: str | None = None
     ebay_avg_price: float | None = None
-    ebay_prices_used: list[float] | None = None
+    ebay_objects_used: list[dict[str, Any]] | None = None
     final_price: float | None = None
     final_source: str | None = None
 
@@ -624,6 +624,54 @@ def _ebay_item_locator(page: Any) -> Any:
     return page.locator("li[data-view*='iid:']")
 
 
+_EBAY_TITLE_SELECTORS = [".s-item__title", ".s-card__title", "h3.s-item__title", "[role='heading']"]
+_EBAY_TITLE_NOISE = ("nuova inserzione", "new listing")
+# Accessibility text eBay appends to each listing link ("opens in a new window/tab").
+_EBAY_TITLE_TRAILING_NOISE = (
+    "viene aperta una nuova finestra o scheda",
+    "si apre in una nuova finestra o scheda",
+    "opens in a new window or tab",
+)
+
+
+def _ebay_item_title(item_locator: Any) -> str:
+    """Best-effort extraction of a listing's title for display/verification.
+
+    Keeps the original casing (titles are shown to the user to check that the
+    scraped item really matches), only collapsing whitespace and stripping the
+    "Nuova inserzione"/"New listing" badge eBay prepends to recent listings and
+    the "opens in a new window/tab" accessibility text it appends to the link.
+    """
+    raw = ""
+    for sel in _EBAY_TITLE_SELECTORS:
+        try:
+            loc = item_locator.locator(sel)
+            if loc.count() > 0:
+                raw = loc.first.inner_text().strip()
+                if raw:
+                    break
+        except Exception:
+            continue
+    if not raw:
+        try:
+            for line in item_locator.inner_text().splitlines():
+                line = line.strip()
+                if line:
+                    raw = line
+                    break
+        except Exception:
+            raw = ""
+
+    collapsed = re.sub(r"\s+", " ", raw).strip()
+    for noise in _EBAY_TITLE_NOISE:
+        if collapsed.lower().startswith(noise):
+            collapsed = collapsed[len(noise):].strip()
+    for noise in _EBAY_TITLE_TRAILING_NOISE:
+        if collapsed.lower().endswith(noise):
+            collapsed = collapsed[: -len(noise)].strip()
+    return collapsed
+
+
 def _wait_for_ebay_results(page: Any, timeout_ms: int) -> None:
     wait_step_ms = 1000
     max_wait_ms = min(timeout_ms, 15000)
@@ -703,13 +751,14 @@ def scrape_ebay_sold(
     banned_words: list[str] | None = None,
     max_items: int = 3,
     timeout_ms: int = 120000,
-) -> tuple[float | None, list[float]]:
+) -> tuple[float | None, list[dict[str, Any]]]:
     """Scrape Italian eBay sold listings for a product.
 
     Navigates to the provided sold-listings URL, retrying automatically on
     Access Denied (Akamai block resolved by reload, no user action needed).
     Extracts prices from the first ``max_items`` rows that pass the quality
-    filter and returns ``(average_price, prices_used)``.
+    filter and returns ``(average_price, objects_used)`` where each object is
+    ``{"price": float, "title": str}`` so the matched listings can be verified.
 
     Items are accepted only inside this range around *cardmarket_price*:
     - not below 25 % (>= 75 % of CardMarket)
@@ -719,7 +768,7 @@ def scrape_ebay_sold(
     hint_tokens = _extract_ebay_query_hint_tokens(url)
     normalized_banned = [normalize_text(w) for w in (banned_words if banned_words is not None else DEFAULT_BANNED)]
 
-    def collect_prices(active_page: Any) -> tuple[float | None, list[float]]:
+    def collect_prices(active_page: Any) -> tuple[float | None, list[dict[str, Any]]]:
         items = _ebay_item_locator(active_page)
         count = items.count()
         print(f"[EBAY] Trovati {count} elementi nella pagina.")
@@ -727,11 +776,11 @@ def scrape_ebay_sold(
         min_acceptable = cardmarket_price * 0.75
         max_acceptable = cardmarket_price * 1.40
 
-        prices: list[float] = []
+        objects: list[dict[str, Any]] = []
         excluded_language = 0
         excluded_card_number = 0
         for i in range(count):
-            if len(prices) >= max_items:
+            if len(objects) >= max_items:
                 break
             try:
                 item_text = items.nth(i).inner_text()
@@ -762,17 +811,17 @@ def scrape_ebay_sold(
             if price > max_acceptable:
                 print(f"[EBAY] Scarto {format_euro(price)} (> soglia {format_euro(max_acceptable)})")
                 continue
-            prices.append(price)
+            objects.append({"price": price, "title": _ebay_item_title(items.nth(i))})
 
         if excluded_language:
             print(f"[EBAY] Esclusi {excluded_language} annunci per mismatch lingua ({resolved_language}).")
         if excluded_card_number:
             print(f"[EBAY] Esclusi {excluded_card_number} annunci senza numero carta {card_number}.")
 
-        if not prices:
+        if not objects:
             return None, []
-        avg = sum(prices) / len(prices)
-        return avg, prices
+        avg = sum(o["price"] for o in objects) / len(objects)
+        return avg, objects
 
     # First attempt on the current page (usually more trusted in CDP sessions).
     if _navigate_ebay_with_retries(
@@ -1258,7 +1307,7 @@ def main() -> None:
                         time.sleep(3)
 
                     print(f"[EBAY] Cerco venduti italiani su eBay per: {name}")
-                    ebay_avg, ebay_prices = scrape_ebay_sold(
+                    ebay_avg, ebay_objects = scrape_ebay_sold(
                         page,
                         name=name,
                         url=ebay_url_product,
@@ -1269,10 +1318,10 @@ def main() -> None:
                     )
                     result.ebay_url = ebay_url_product
                     result.ebay_avg_price = ebay_avg
-                    result.ebay_prices_used = ebay_prices
+                    result.ebay_objects_used = ebay_objects
 
                     if ebay_avg is not None:
-                        prices_str = ", ".join(format_euro(p) for p in ebay_prices)
+                        prices_str = ", ".join(format_euro(o["price"]) for o in ebay_objects)
                         print(f"[EBAY] Prezzi usati: [{prices_str}] -> media {format_euro(ebay_avg)}")
                         effective_price = result.best_offer.effective_price or result.best_offer.price
                         if ebay_avg < effective_price:
@@ -1347,7 +1396,7 @@ def main() -> None:
 
             print(f"Prezzo minimo CardMarket: {result.best_offer.price_display}")
             if result.ebay_avg_price is not None:
-                print(f"Media eBay venduti ({len(result.ebay_prices_used or [])} articoli): {format_euro(result.ebay_avg_price)}")
+                print(f"Media eBay venduti ({len(result.ebay_objects_used or [])} articoli): {format_euro(result.ebay_avg_price)}")
             print(f"Prezzo finale usato [{final_source}]: {format_euro(final_price)}")
             print(f"Subtotale ({result.quantity}x): {format_euro(line_total)}")
             print(f"Estratto offerta: {result.best_offer.row_text[:220]}")
@@ -1367,7 +1416,7 @@ def main() -> None:
                 row_data["ebay_url"] = result.ebay_url
                 row_data["ebay_avg_price"] = result.ebay_avg_price
                 row_data["ebay_avg_price_display"] = format_euro(result.ebay_avg_price) if result.ebay_avg_price is not None else None
-                row_data["ebay_prices_used"] = result.ebay_prices_used or []
+                row_data["ebay_objects_used"] = result.ebay_objects_used or []
             row_data["final_price"] = final_price
             row_data["final_price_display"] = format_euro(final_price)
             row_data["final_source"] = final_source
@@ -1380,19 +1429,6 @@ def main() -> None:
     total_with_valid_price = sum(result.quantity for result in results if result.best_offer is not None)
     flat_values = [v for values in grouped_values.values() for v in values]
     total_sum = sum(item[3] for item in flat_values)
-
-    def _format_values(values: list[tuple[str, int, float, float, str]]) -> list[dict[str, Any]]:
-        return [
-            {
-                "name": name,
-                "quantity": quantity,
-                "unit_price": unit_price,
-                "price_display": price_display,
-                "line_total": line_total,
-                "line_total_display": format_euro(line_total),
-            }
-            for name, quantity, unit_price, line_total, price_display in values
-        ]
 
     def _google_sheet_formula(values: list[tuple[str, int, float, float, str]]) -> str:
         terms: list[str] = []
@@ -1419,7 +1455,6 @@ def main() -> None:
                 {
                     "category": category,
                     "category_display": label,
-                    "values": _format_values(values),
                     "sum_total": cat_sum,
                     "sum_total_display": format_euro(cat_sum),
                     "google_sheet_formula": formula,
@@ -1432,7 +1467,6 @@ def main() -> None:
     output_data: dict[str, Any] = {
         "results": payload,
         "categories": categories_output,
-        "values": _format_values(flat_values),
         "sum_total": total_sum,
         "sum_total_display": format_euro(total_sum),
         "objects_examined_total_quantity": total_examined_objects,
