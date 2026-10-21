@@ -135,6 +135,7 @@ def main() -> None:
                     expected_language=item.get("ebay_language"),
                     card_number=extract_card_number(item["url"]),
                     required_any=[str(x) for x in item.get("required_any", [])],
+                    ebay_required_any=[str(x) for x in item.get("ebay_required_any", [])],
                     discount_any=[str(x) for x in item.get("discount_any", [])],
                     discount_percent=float(item.get("discount_percent", 0)),
                 )

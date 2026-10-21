@@ -21,7 +21,8 @@ DEFAULT_BANNED = [
     "damaged", "danneggiato", "rotto", "broke", "crepa", "rovinat", "difett", "dmg", "difect", "wear",
     "dent", "ding", "shock on", "shock al", "transport damage", "damage from transport",
     "damage in shipping", "damaged in transit", "ammaccato", "ammaccatura",
-    "imperfect", "imperfezion", "ripped", "strapp",
+    "imperfect", "imperfezion", "ripped", "strapp", "apertura",
+    "custodia", "artwork esteso", "extended artwork",
 ]
 DEFAULT_SPECULATIVE = [
     "possibile",
@@ -58,6 +59,16 @@ _EBAY_JP_MARKERS = [
 _EBAY_EN_MARKERS = [
     " eng ", " english ", " inglese ",
 ]
+# English set names: Italian listings use the Italian set name (e.g. "Tempesta
+# Argentata"), so an English set name in a title is a reliable "this is the
+# English print" signal even when no "eng"/"english" word is present.
+_EBAY_EN_SET_MARKERS = [
+    " evolving skies ", " silver tempest ", " lost origin ", " brilliant stars ",
+    " fusion strike ", " astral radiance ", " crown zenith ",
+    " scarlet violet ", " paldea evolved ", " obsidian flames ", " paradox rift ",
+    " temporal forces ", " twilight masquerade ", " shrouded fable ", " stellar crown ",
+    " surging sparks ", " prismatic evolutions ", " journey together ", " destined rivals ",
+]
 _GENERIC_QUERY_TOKENS = {
     "pokemon", "booster", "box", "bundle", "mini", "tin", "collection", "elite", "trainer", "etb",
     "special", "illustration", "card", "cards", "set", "single", "singles", "psa", "bgs", "cgc",
@@ -93,6 +104,7 @@ class ProductResult:
     required_any: list[str] | None = None
     discount_any: list[str] | None = None
     discount_percent: float = 0.0
+    ebay_required_any: list[str] | None = None
     final_price: float | None = None
     final_source: str | None = None
 
@@ -305,19 +317,25 @@ def ebay_item_matches_language(
     text_spaced = f" {text} "
     has_it = _contains_any_marker(text, _EBAY_IT_MARKERS)
     has_jp = _contains_any_marker(text, _EBAY_JP_MARKERS)
-    has_en = _contains_any_marker(text, _EBAY_EN_MARKERS)
+    has_en = _contains_any_marker(text, _EBAY_EN_MARKERS) or _contains_any_marker(text, _EBAY_EN_SET_MARKERS)
 
     has_hint_token = any(token in text_spaced for token in query_hint_tokens)
 
     if expected_language == "it":
+        # An explicit Italian marker wins even if the title also names the set in
+        # English (some IT sellers add it for searchability).
+        if has_it:
+            return True
         if has_jp or has_en:
             return False
-        return has_it or has_hint_token
+        return has_hint_token
 
     if expected_language == "jp":
+        if has_jp:
+            return True
         if has_it or has_en:
             return False
-        return has_jp or has_hint_token
+        return has_hint_token
 
     return True
 
@@ -797,6 +815,7 @@ def scrape_ebay_sold(
     expected_language: str | None = None,
     card_number: str | None = None,
     required_any: list[str] | None = None,
+    ebay_required_any: list[str] | None = None,
     discount_any: list[str] | None = None,
     discount_percent: float = 0.0,
     banned_words: list[str] | None = None,
@@ -822,11 +841,17 @@ def scrape_ebay_sold(
     ``discount_percent`` less (mirroring the CardMarket side): their discounted
     value is used for the range check and the average, while the real sold price
     is still reported for verification.
+
+    When ``ebay_required_any`` is set, only listings whose text contains at least
+    one of those tokens are kept. Use it to disambiguate near-identical sibling
+    products (e.g. keep only "kingdra" for the Kingdra collection, so the
+    Greninja one that eBay's fuzzy search returns is dropped).
     """
     resolved_language = infer_ebay_expected_language(url, expected_language)
     hint_tokens = _extract_ebay_query_hint_tokens(url)
     normalized_banned = [normalize_text(w) for w in (banned_words if banned_words is not None else DEFAULT_BANNED)]
     normalized_discount = [normalize_text(x) for x in (discount_any or [])]
+    normalized_required_tokens = [normalize_text(x) for x in (ebay_required_any or [])]
     wants_grade = requirement_wants_grade(required_any or [], name)
 
     def collect_prices(active_page: Any) -> tuple[float | None, list[dict[str, Any]]]:
@@ -841,6 +866,7 @@ def scrape_ebay_sold(
         excluded_language = 0
         excluded_card_number = 0
         excluded_grade = 0
+        excluded_required_token = 0
         for i in range(count):
             if len(objects) >= max_items:
                 break
@@ -862,6 +888,11 @@ def scrape_ebay_sold(
                 excluded_grade += 1
                 continue
             item_text_norm = normalize_text(item_text)
+            if normalized_required_tokens and not any(
+                has_keyword(item_text_norm, tok) for tok in normalized_required_tokens
+            ):
+                excluded_required_token += 1
+                continue
             if any(
                 has_keyword(item_text_norm, w) and not keyword_is_negated(item_text_norm, w)
                 for w in normalized_banned
@@ -892,6 +923,8 @@ def scrape_ebay_sold(
             print(f"[EBAY] Esclusi {excluded_card_number} annunci senza numero carta {card_number}.")
         if excluded_grade:
             print(f"[EBAY] Esclusi {excluded_grade} annunci non gradati.")
+        if excluded_required_token:
+            print(f"[EBAY] Esclusi {excluded_required_token} annunci senza i termini richiesti {ebay_required_any}.")
 
         if not objects:
             return None, []
@@ -1284,6 +1317,7 @@ def main() -> None:
             required_any = [str(x) for x in product.get("required_any", [])]
             discount_any = [str(x) for x in product.get("discount_any", [])]
             discount_percent = float(product.get("discount_percent", 0))
+            ebay_required_any = [str(x) for x in product.get("ebay_required_any", [])]
             quantity = max(1, int(product.get("quantity", 1)))
             ebay_url_product = str(product.get("ebay_url", "")).strip()
             ebay_language_product = str(product.get("ebay_language", "")).strip() or None
@@ -1369,6 +1403,7 @@ def main() -> None:
             result.required_any = required_any
             result.discount_any = discount_any
             result.discount_percent = discount_percent
+            result.ebay_required_any = ebay_required_any
             results.append(result)
 
             # ── eBay sold comparison ───────────────────────────────────────────
@@ -1395,6 +1430,7 @@ def main() -> None:
                         required_any=required_any,
                         discount_any=discount_any,
                         discount_percent=discount_percent,
+                        ebay_required_any=ebay_required_any,
                         banned_words=args.banned,
                     )
                     result.ebay_url = ebay_url_product
@@ -1473,6 +1509,8 @@ def main() -> None:
         if result.discount_any:
             row_data["discount_any"] = result.discount_any
             row_data["discount_percent"] = result.discount_percent
+        if result.ebay_required_any:
+            row_data["ebay_required_any"] = result.ebay_required_any
 
         if result.best_offer is None:
             print("Nessuna offerta valida trovata con i filtri richiesti.")
