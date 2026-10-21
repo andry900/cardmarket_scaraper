@@ -374,14 +374,18 @@ def scrape_product(
             or "cloudflare" in body and "verifica" in body
         )
 
-    def safe_is_challenge() -> bool:
-        # During a reload the execution context is torn down, so title()/
-        # inner_text()/content() can raise transiently. Treat that as
-        # "still navigating" rather than letting it bubble up.
-        try:
-            return is_challenge(page)
-        except Exception:
-            return True
+    def safe_is_challenge(retries: int = 5, delay_ms: int = 800) -> bool:
+        # During a navigation/reload the execution context is torn down, so
+        # title()/inner_text()/content() raise "execution context was destroyed".
+        # Retry briefly to let the navigation settle before deciding; if it never
+        # settles, treat it as "still navigating" (challenge) so the caller retries
+        # rather than letting the error bubble up and kill the whole run.
+        for _ in range(max(1, retries)):
+            try:
+                return is_challenge(page)
+            except Exception:
+                page.wait_for_timeout(delay_ms)
+        return True
 
     def wait_until_challenge_cleared(timeout_seconds: int, reload_every: float = 8.0) -> bool:
         deadline = time.time() + max(1, timeout_seconds)
@@ -405,7 +409,7 @@ def scrape_product(
         page.goto(url, wait_until="domcontentloaded", timeout=120000)
         page.wait_for_timeout(3000)
 
-        if not is_challenge(page):
+        if not safe_is_challenge():
             break
 
         if manual_challenge:
