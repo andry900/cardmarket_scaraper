@@ -1398,10 +1398,13 @@ def main() -> None:
                     result.ebay_avg_price = ebay_avg
                     result.ebay_objects_used = ebay_objects
 
+                    # Computed up front so the "no eBay result" branch below cannot
+                    # fall back to a stale value leaked from a previous iteration.
+                    effective_price = result.best_offer.effective_price or result.best_offer.price
+
                     if ebay_avg is not None:
                         prices_str = ", ".join(format_euro(o.get("effective_price", o["price"])) for o in ebay_objects)
                         print(f"[EBAY] Prezzi usati: [{prices_str}] -> media {format_euro(ebay_avg)}")
-                        effective_price = result.best_offer.effective_price or result.best_offer.price
                         if ebay_avg < effective_price:
                             result.final_price = ebay_avg
                             result.final_source = "ebay"
