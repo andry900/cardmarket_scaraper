@@ -21,6 +21,7 @@ DEFAULT_BANNED = [
     "damaged", "danneggiato", "rotto", "broke", "crepa", "rovinat", "difett", "dmg", "difect", "wear",
     "dent", "ding", "shock on", "shock al", "transport damage", "damage from transport",
     "damage in shipping", "damaged in transit", "ammaccato", "ammaccatura",
+    "imperfect", "imperfezion", "ripped", "strapp",
 ]
 DEFAULT_SPECULATIVE = [
     "possibile",
@@ -54,6 +55,9 @@ _EBAY_IT_MARKERS = [
 _EBAY_JP_MARKERS = [
     " jap ", " japan ", " japanese ", " giapponese ", " jpn ", " jp ", " japonais ",
 ]
+_EBAY_EN_MARKERS = [
+    " eng ", " english ", " inglese ",
+]
 _GENERIC_QUERY_TOKENS = {
     "pokemon", "booster", "box", "bundle", "mini", "tin", "collection", "elite", "trainer", "etb",
     "special", "illustration", "card", "cards", "set", "single", "singles", "psa", "bgs", "cgc",
@@ -86,6 +90,9 @@ class ProductResult:
     ebay_url: str | None = None
     ebay_avg_price: float | None = None
     ebay_objects_used: list[dict[str, Any]] | None = None
+    required_any: list[str] | None = None
+    discount_any: list[str] | None = None
+    discount_percent: float = 0.0
     final_price: float | None = None
     final_source: str | None = None
 
@@ -225,6 +232,39 @@ def ebay_item_matches_card_number(item_text: str, card_number: str | None) -> bo
     return re.search(rf"(?<!\d){re.escape(card_number)}(?!\d)", item_text) is not None
 
 
+# Grading companies, used to tell a graded listing (PSA 9, GRAAD 9, ...) from a raw card.
+_EBAY_GRADE_RE = re.compile(
+    r"\b(?:psa|bgs|cgc|sgc|ace|gma|graad|beckett|ai\s*grading)\s*\.?\s*\d",
+    re.IGNORECASE,
+)
+# Tokens that, when present in a product's required terms or name, mean it is a graded card.
+_GRADE_REQUIREMENT_MARKERS = (
+    "psa", "bgs", "cgc", "sgc", "ace", "gma", "graad", "beckett", "grading", "gradata", "graded",
+)
+
+
+def requirement_wants_grade(*sources: Any) -> bool:
+    """Return True when the product is a graded card.
+
+    Accepts any mix of strings and string lists (e.g. ``required_any`` and the
+    product name); a grading company or the word "grading" in any of them marks
+    the product as graded.
+    """
+    tokens: list[str] = []
+    for src in sources:
+        if isinstance(src, str):
+            tokens.append(src)
+        elif src:
+            tokens.extend(str(x) for x in src)
+    joined = normalize_text(" ".join(tokens))
+    return any(marker in joined for marker in _GRADE_REQUIREMENT_MARKERS)
+
+
+def ebay_item_is_graded(item_text: str) -> bool:
+    """Return True when an eBay listing title shows a numeric grade (PSA 9, GRAAD 9, ...)."""
+    return _EBAY_GRADE_RE.search(normalize_text(item_text)) is not None
+
+
 def infer_ebay_expected_language(url: str, configured_language: str | None = None) -> str:
     """Infer expected listing language: any, it, jp."""
     if configured_language:
@@ -262,16 +302,17 @@ def ebay_item_matches_language(
     text_spaced = f" {text} "
     has_it = _contains_any_marker(text, _EBAY_IT_MARKERS)
     has_jp = _contains_any_marker(text, _EBAY_JP_MARKERS)
+    has_en = _contains_any_marker(text, _EBAY_EN_MARKERS)
 
     has_hint_token = any(token in text_spaced for token in query_hint_tokens)
 
     if expected_language == "it":
-        if has_jp:
+        if has_jp or has_en:
             return False
         return has_it or has_hint_token
 
     if expected_language == "jp":
-        if has_it:
+        if has_it or has_en:
             return False
         return has_jp or has_hint_token
 
@@ -748,6 +789,9 @@ def scrape_ebay_sold(
     cardmarket_price: float,
     expected_language: str | None = None,
     card_number: str | None = None,
+    required_any: list[str] | None = None,
+    discount_any: list[str] | None = None,
+    discount_percent: float = 0.0,
     banned_words: list[str] | None = None,
     max_items: int = 3,
     timeout_ms: int = 120000,
@@ -763,10 +807,20 @@ def scrape_ebay_sold(
     Items are accepted only inside this range around *cardmarket_price*:
     - not below 25 % (>= 75 % of CardMarket)
     - not above 40 % (<= 140 % of CardMarket)
+
+    For graded products (``required_any``/``name`` mention a grade) raw,
+    ungraded listings are excluded so only graded cards feed the average.
+
+    Listings whose title matches ``discount_any`` are valued at
+    ``discount_percent`` less (mirroring the CardMarket side): their discounted
+    value is used for the range check and the average, while the real sold price
+    is still reported for verification.
     """
     resolved_language = infer_ebay_expected_language(url, expected_language)
     hint_tokens = _extract_ebay_query_hint_tokens(url)
     normalized_banned = [normalize_text(w) for w in (banned_words if banned_words is not None else DEFAULT_BANNED)]
+    normalized_discount = [normalize_text(x) for x in (discount_any or [])]
+    wants_grade = requirement_wants_grade(required_any or [], name)
 
     def collect_prices(active_page: Any) -> tuple[float | None, list[dict[str, Any]]]:
         items = _ebay_item_locator(active_page)
@@ -779,6 +833,7 @@ def scrape_ebay_sold(
         objects: list[dict[str, Any]] = []
         excluded_language = 0
         excluded_card_number = 0
+        excluded_grade = 0
         for i in range(count):
             if len(objects) >= max_items:
                 break
@@ -796,6 +851,9 @@ def scrape_ebay_sold(
             if not ebay_item_matches_card_number(item_text, card_number):
                 excluded_card_number += 1
                 continue
+            if wants_grade and not ebay_item_is_graded(item_text):
+                excluded_grade += 1
+                continue
             item_text_norm = normalize_text(item_text)
             if any(
                 has_keyword(item_text_norm, w) and not keyword_is_negated(item_text_norm, w)
@@ -805,22 +863,32 @@ def scrape_ebay_sold(
             price = extract_ebay_price(item_text)
             if price is None:
                 continue
-            if price < min_acceptable:
+            effective_price = price
+            if normalized_discount and discount_percent and any(
+                has_non_negated_keyword(item_text_norm, w) for w in normalized_discount
+            ):
+                effective_price = round(price * (1 - discount_percent / 100), 2)
+            if effective_price < min_acceptable:
                 print(f"[EBAY] Scarto {format_euro(price)} (< soglia {format_euro(min_acceptable)})")
                 continue
-            if price > max_acceptable:
+            if effective_price > max_acceptable:
                 print(f"[EBAY] Scarto {format_euro(price)} (> soglia {format_euro(max_acceptable)})")
                 continue
-            objects.append({"price": price, "title": _ebay_item_title(items.nth(i))})
+            obj: dict[str, Any] = {"price": price, "title": _ebay_item_title(items.nth(i))}
+            if effective_price != price:
+                obj["effective_price"] = effective_price
+            objects.append(obj)
 
         if excluded_language:
             print(f"[EBAY] Esclusi {excluded_language} annunci per mismatch lingua ({resolved_language}).")
         if excluded_card_number:
             print(f"[EBAY] Esclusi {excluded_card_number} annunci senza numero carta {card_number}.")
+        if excluded_grade:
+            print(f"[EBAY] Esclusi {excluded_grade} annunci non gradati.")
 
         if not objects:
             return None, []
-        avg = sum(o["price"] for o in objects) / len(objects)
+        avg = sum(o.get("effective_price", o["price"]) for o in objects) / len(objects)
         return avg, objects
 
     # First attempt on the current page (usually more trusted in CDP sessions).
@@ -1291,6 +1359,9 @@ def main() -> None:
                         note="Nessun prezzo CardMarket precedente disponibile per la ricerca eBay.",
                     )
 
+            result.required_any = required_any
+            result.discount_any = discount_any
+            result.discount_percent = discount_percent
             results.append(result)
 
             # ── eBay sold comparison ───────────────────────────────────────────
@@ -1314,6 +1385,9 @@ def main() -> None:
                         cardmarket_price=result.best_offer.effective_price or result.best_offer.price,
                         expected_language=ebay_language_product,
                         card_number=extract_card_number(url),
+                        required_any=required_any,
+                        discount_any=discount_any,
+                        discount_percent=discount_percent,
                         banned_words=args.banned,
                     )
                     result.ebay_url = ebay_url_product
@@ -1321,7 +1395,7 @@ def main() -> None:
                     result.ebay_objects_used = ebay_objects
 
                     if ebay_avg is not None:
-                        prices_str = ", ".join(format_euro(o["price"]) for o in ebay_objects)
+                        prices_str = ", ".join(format_euro(o.get("effective_price", o["price"])) for o in ebay_objects)
                         print(f"[EBAY] Prezzi usati: [{prices_str}] -> media {format_euro(ebay_avg)}")
                         effective_price = result.best_offer.effective_price or result.best_offer.price
                         if ebay_avg < effective_price:
@@ -1384,6 +1458,11 @@ def main() -> None:
             "best_offer": None,
             "note": result.note,
         }
+        if result.required_any:
+            row_data["required_any"] = result.required_any
+        if result.discount_any:
+            row_data["discount_any"] = result.discount_any
+            row_data["discount_percent"] = result.discount_percent
 
         if result.best_offer is None:
             print("Nessuna offerta valida trovata con i filtri richiesti.")
