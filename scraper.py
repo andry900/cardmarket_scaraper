@@ -1434,19 +1434,26 @@ def main() -> None:
                         time.sleep(3)
 
                     print(f"[EBAY] Cerco venduti italiani su eBay per: {name}")
-                    ebay_avg, ebay_objects = scrape_ebay_sold(
-                        page,
-                        name=name,
-                        url=ebay_url_product,
-                        cardmarket_price=result.best_offer.effective_price or result.best_offer.price,
-                        expected_language=ebay_language_product,
-                        card_number=extract_card_number(url),
-                        required_any=required_any,
-                        discount_any=discount_any,
-                        discount_percent=discount_percent,
-                        ebay_required_all=ebay_required_all,
-                        banned_words=args.banned,
-                    )
+                    try:
+                        ebay_avg, ebay_objects = scrape_ebay_sold(
+                            page,
+                            name=name,
+                            url=ebay_url_product,
+                            cardmarket_price=result.best_offer.effective_price or result.best_offer.price,
+                            expected_language=ebay_language_product,
+                            card_number=extract_card_number(url),
+                            required_any=required_any,
+                            discount_any=discount_any,
+                            discount_percent=discount_percent,
+                            ebay_required_all=ebay_required_all,
+                            banned_words=args.banned,
+                        )
+                    except Exception as exc:
+                        # A single product's eBay lookup failing (block, closed
+                        # page, timeout) must not abort the whole run and lose the
+                        # results collected so far: fall back to CardMarket.
+                        print(f"[EBAY] Errore durante lo scraping eBay per '{name}': {exc!r} -> uso CardMarket")
+                        ebay_avg, ebay_objects = None, []
                     result.ebay_url = ebay_url_product
                     result.ebay_avg_price = ebay_avg
                     result.ebay_objects_used = ebay_objects
