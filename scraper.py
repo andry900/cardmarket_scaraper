@@ -238,8 +238,11 @@ _EBAY_GRADE_RE = re.compile(
     re.IGNORECASE,
 )
 # Tokens that, when present in a product's required terms or name, mean it is a graded card.
-_GRADE_REQUIREMENT_MARKERS = (
-    "psa", "bgs", "cgc", "sgc", "ace", "gma", "graad", "beckett", "grading", "gradata", "graded",
+# Matched on whole words so short company names (e.g. "ace") don't match inside unrelated
+# words such as "Gl-ace-on".
+_GRADE_REQUIREMENT_RE = re.compile(
+    r"\b(?:psa|bgs|cgc|sgc|ace|gma|graad|beckett|grading|graded|gradat\w*)\b",
+    re.IGNORECASE,
 )
 
 
@@ -257,7 +260,7 @@ def requirement_wants_grade(*sources: Any) -> bool:
         elif src:
             tokens.extend(str(x) for x in src)
     joined = normalize_text(" ".join(tokens))
-    return any(marker in joined for marker in _GRADE_REQUIREMENT_MARKERS)
+    return _GRADE_REQUIREMENT_RE.search(joined) is not None
 
 
 def ebay_item_is_graded(item_text: str) -> bool:
